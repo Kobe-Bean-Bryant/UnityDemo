@@ -1,0 +1,26 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements">
+    <ui:ScrollView>
+        <ui:VisualElement class="container">
+
+            <ui:Label text="ASMDEF Doctor" class="title" />
+            <ui:VisualElement class="title-bar" />
+
+            <!-- 扫描按钮 + 说明 -->
+            <ui:VisualElement class="section-card">
+                <ui:Label text="扫描 Assets/ 下所有 .cs 文件，检测未被 .asmdef 或 .asmref 覆盖的文件夹" class="hint" />
+                <ui:Button text="Scan" name="scan-button" class="scan-button" />
+            </ui:VisualElement>
+
+            <!-- 扫描结果列表 -->
+            <ui:VisualElement name="results-container" class="results-container" />
+
+            <!-- 托管恢复提示 -->
+            <ui:VisualElement name="restore-container" class="results-container" />
+
+            <!-- 操作按钮 -->
+            <ui:Button text="Fix Selected" name="fix-button" class="create-button" />
+            <ui:Label name="status-label" class="status-label" />
+
+        </ui:VisualElement>
+    </ui:ScrollView>
+</ui:UXML>

@@ -1,0 +1,18 @@
+fileFormatVersion: 2
+guid: 1bccb7cf6f219df4c93261336e7f18f5
+MonoImporter:
+  externalObjects: {}
+  serializedVersion: 2
+  defaultReferences: []
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 350246
+  packageName: Task Canvas - Project Management & Kanban Board
+  packageVersion: 1.1.1
+  assetPath: Assets/Task Canvas/Editor/UI/ColumnEditPopup.cs
+  uploadId: 871924

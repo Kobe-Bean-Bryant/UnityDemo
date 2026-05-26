@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: f48d6c0a5e672e94eac0c599cb94e1de
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 11400000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 350246
+  packageName: Task Canvas - Project Management & Kanban Board
+  packageVersion: 1.1.1
+  assetPath: Assets/Task Canvas/Editor/Resources/TaskCanvasSettings.asset
+  uploadId: 871924

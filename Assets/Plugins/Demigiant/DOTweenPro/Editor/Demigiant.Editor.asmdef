@@ -1,0 +1,19 @@
+{
+    "name": "Demigiant.Editor",
+    "rootNamespace": "",
+    "references": [
+        "Demigiant",
+        "Unity.TextMeshPro",
+        "UnityEngine.UI"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "autoReferenced": true,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "defineConstraints": [],
+    "noEngineReferences": false
+}

@@ -1,0 +1,16 @@
+{
+    "name": "Demigiant",
+    "rootNamespace": "",
+    "references": [
+        "Unity.TextMeshPro",
+        "UnityEngine.UI"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "autoReferenced": true,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "defineConstraints": [],
+    "noEngineReferences": false
+}

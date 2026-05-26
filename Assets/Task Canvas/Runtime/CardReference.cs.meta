@@ -1,0 +1,18 @@
+fileFormatVersion: 2
+guid: 751f158a8b41155418a4476cf845f5ff
+MonoImporter:
+  externalObjects: {}
+  serializedVersion: 2
+  defaultReferences: []
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 350246
+  packageName: Task Canvas - Project Management & Kanban Board
+  packageVersion: 1.1.1
+  assetPath: Assets/Task Canvas/Runtime/CardReference.cs
+  uploadId: 871924

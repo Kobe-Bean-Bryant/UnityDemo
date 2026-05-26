@@ -1,0 +1,1336 @@
+.task-canvas-root {
+    flex-grow: 1;
+    background-color: #1e1e1e;
+}
+
+.toolbar {
+    flex-direction: row;
+    align-items: center;
+    padding: 8px 12px;
+    background-color: #252526;
+    border-bottom-width: 1px;
+    border-bottom-color: #3c3c3c;
+    min-height: 40px;
+}
+
+.toolbar-label {
+    font-size: 13px;
+    color: #888888;
+    margin-right: 4px;
+}
+
+.toolbar-button-icon {
+    font-size: 16px;
+    padding: 6px 10px;
+    background-color: #3c3c3c;
+}
+
+.toolbar-button-icon:hover {
+    background-color: #4a4a4a;
+}
+
+.toolbar-button {
+    background-color: #0e639c;
+    color: #ffffff;
+    border-radius: 4px;
+    padding: 6px 12px;
+    margin-left: 8px;
+    border-width: 0;
+    -unity-font-style: bold;
+}
+
+.toolbar-button:hover {
+    background-color: #1177bb;
+}
+
+.toolbar-button:active {
+    background-color: #0d5a8c;
+}
+
+.theme-toggle {
+    background-color: #3c3c3c;
+    border-radius: 4px;
+    padding: 6px 10px;
+    margin-left: 8px;
+    border-width: 0;
+    color: #e0e0e0;
+}
+
+.theme-toggle:hover {
+    background-color: #4a4a4a;
+}
+
+.board-dropdown {
+    min-width: 180px;
+    max-width: 220px;
+    margin-left: 8px;
+    background-color: #3c3c3c;
+    border-radius: 4px;
+    border-width: 0;
+    color: #e0e0e0;
+}
+
+.filter-bar {
+    flex-direction: row;
+    align-items: center;
+    padding: 8px 12px;
+    background-color: #2d2d30;
+    border-bottom-width: 1px;
+    border-bottom-color: #3c3c3c;
+    flex-wrap: wrap;
+    min-height: 42px;
+}
+
+.filter-label {
+    color: #888888;
+    margin-right: 8px;
+    font-size: 12px;
+}
+
+.filter-chip {
+    background-color: #3c3c3c;
+    border-radius: 12px;
+    padding: 4px 10px;
+    margin: 2px 4px;
+    color: #e0e0e0;
+    font-size: 11px;
+    border-width: 1px;
+    border-color: #4a4a4a;
+}
+
+.filter-chip:hover {
+    background-color: #4a4a4a;
+    border-color: #5a5a5a;
+}
+
+.filter-chip.active {
+    background-color: #0e639c;
+    border-color: #1177bb;
+    color: #ffffff;
+}
+
+.filter-chip-clear {
+    background-color: #5a3030;
+    color: #ffaaaa;
+}
+
+.filter-chip-clear:hover {
+    background-color: #6a4040;
+}
+
+.filter-chip-more {
+    background-color: #4a4a4a;
+    color: #aaaaaa;
+}
+
+.filter-chip-more:hover {
+    background-color: #5a5a5a;
+    color: #ffffff;
+}
+
+.filter-chip-add {
+    background-color: transparent;
+    border-width: 1px;
+    border-color: #4a4a4a;
+    color: #888888;
+    min-width: 28px;
+    padding: 4px 8px;
+}
+
+.filter-chip-add:hover {
+    background-color: #3c3c3c;
+    border-color: #5a5a5a;
+    color: #ffffff;
+}
+
+.assignee-chip {
+    border-left-width: 3px;
+}
+
+.tag-toggle {
+    background-color: #3c3c3c;
+    border-radius: 12px;
+    padding: 4px 12px;
+    margin: 2px 4px;
+    color: #e0e0e0;
+    font-size: 11px;
+    border-width: 1px;
+    border-color: #4a4a4a;
+}
+
+.tag-toggle:hover {
+    background-color: #4a4a4a;
+    border-color: #5a5a5a;
+}
+
+.tag-toggle.active {
+    background-color: #0e639c;
+    border-color: #1177bb;
+    color: #ffffff;
+}
+
+.add-chip {
+    background-color: transparent;
+    border-radius: 12px;
+    padding: 4px 12px;
+    margin: 2px 4px;
+    color: #888888;
+    font-size: 11px;
+    border-width: 1px;
+    border-color: #5a5a5a;
+}
+
+.add-chip:hover {
+    background-color: #3c3c3c;
+    border-color: #0e639c;
+    color: #ffffff;
+}
+
+/* List item styles - Modern Dark Mode */
+.checklist-row {
+    padding: 8px 12px;
+    margin-bottom: 2px;
+    border-bottom-width: 1px;
+    border-bottom-color: #404045;
+}
+
+.checklist-row:hover {
+    background-color: #2a2a2e;
+}
+
+.link-row {
+    padding: 8px 12px;
+    margin-bottom: 2px;
+    border-bottom-width: 1px;
+    border-bottom-color: #404045;
+}
+
+.link-row:hover {
+    background-color: #2a2a2e;
+}
+
+.asset-row {
+    padding: 8px 12px;
+    margin-bottom: 2px;
+    border-bottom-width: 1px;
+    border-bottom-color: #404045;
+}
+
+.asset-row:hover {
+    background-color: #2a2a2e;
+}
+
+.item-delete-btn {
+    background-color: #3a3a40;
+    border-width: 1px;
+    border-color: #505055;
+    border-radius: 4px;
+    color: #999999;
+    font-size: 12px;
+    padding: 4px 8px;
+}
+
+.item-delete-btn:hover {
+    color: #ff6b6b;
+    background-color: #4a2020;
+    border-color: #ff6b6b;
+}
+
+.item-action-btn {
+    background-color: #0e639c;
+    border-width: 0;
+    border-radius: 4px;
+    color: #ffffff;
+    font-size: 11px;
+    padding: 4px 10px;
+    margin-left: 8px;
+}
+
+.item-action-btn:hover {
+    background-color: #1177bb;
+}
+
+.main-scroll-view {
+    flex-grow: 1;
+}
+
+.columns-container {
+    flex-direction: row;
+    flex-grow: 1;
+    padding: 16px;
+    min-height: 100%;
+}
+
+.kanban-column {
+    width: 280px;
+    min-width: 280px;
+    background-color: #252526;
+    border-radius: 8px;
+    margin-right: 12px;
+    margin-bottom: 50px;
+    flex-shrink: 0;
+    overflow: hidden;
+}
+
+.kanban-column.drop-target {
+    border-width: 2px;
+    border-color: #0e639c;
+}
+
+.kanban-column.column-drop-target {
+    border-width: 2px;
+    border-color: #0e639c;
+}
+
+.kanban-column.dragging {
+    opacity: 0.7;
+}
+
+.column-header {
+    padding: 10px 12px;
+    flex-direction: row;
+    align-items: center;
+    cursor: move-arrow;
+}
+
+.column-title {
+    font-size: 14px;
+    -unity-font-style: bold;
+    color: #e0e0e0;
+    flex-grow: 1;
+}
+
+.column-title-field {
+    font-size: 14px;
+    -unity-font-style: bold;
+    background-color: #2a2a2c;
+    color: #e0e0e0;
+    border-radius: 4px;
+    border-width: 0;
+    padding: 2px 4px;
+    margin: -2px 0;
+    max-width: 160px;
+}
+
+.column-title-field:focus {
+    background-color: #333336;
+}
+
+.column-title-field .unity-text-field__input {
+    background-color: transparent;
+    border-width: 0;
+}
+
+.column-count {
+    font-size: 11px;
+    color: #888888;
+    background-color: #3c3c3c;
+    border-radius: 10px;
+    padding: 2px 8px;
+    margin-right: 8px;
+}
+
+.column-edit-button {
+    padding: 4px 6px;
+    border-radius: 4px;
+}
+
+.column-edit-button:hover {
+    background-color: #3c3c3c;
+}
+
+.edit-button {
+    background-color: transparent;
+    border-width: 0;
+    padding: 4px 6px;
+    border-radius: 4px;
+    color: #888888;
+    font-size: 12px;
+}
+
+.edit-button:hover {
+    background-color: #3c3c3c;
+    color: #e0e0e0;
+}
+
+.column-cards-scroll {
+    flex-shrink: 0;
+    padding: 8px 8px 0 10px;
+    min-height: 0;
+}
+
+.column-cards {
+    flex-grow: 1;
+}
+
+.column-add-button {
+    margin: 0 8px 8px 8px;
+    padding: 10px 12px;
+    background-color: #2d2d30;
+    border-radius: 6px;
+    border-width: 0;
+    -unity-text-align: middle-center;
+}
+
+.add-column-button {
+    width: 280px;
+    min-width: 280px;
+    height: 40px;
+    background-color: #2d2d30;
+    border-radius: 8px;
+    border-width: 0;
+    color: #888888;
+    font-size: 14px;
+    margin-top: 0;
+    align-self: flex-start;
+}
+
+.add-column-button:hover {
+    background-color: #353539;
+    color: #e0e0e0;
+}
+
+.card-drop-zone {
+    height: 4px;
+    margin: 2px 0;
+    border-radius: 2px;
+}
+
+.card-drop-zone.drop-zone-active {
+    height: 40px;
+    background-color: rgba(14, 99, 156, 0.3);
+    border-width: 2px;
+    border-color: #0e639c;
+}
+
+.kanban-card {
+    background-color: #2d2d30;
+    border-radius: 6px;
+    padding: 10px 12px;
+    margin-bottom: 4px;
+    border-top-width: 1px;
+    border-right-width: 1px;
+    border-bottom-width: 1px;
+    border-left-width: 2px;
+    border-top-color: transparent;
+    border-right-color: transparent;
+    border-bottom-color: transparent;
+    border-left-color: #4a9eff;
+}
+
+.kanban-card.card-hover {
+    border-color: #0e639c;
+}
+
+.kanban-card.dragging {
+    opacity: 0.9;
+}
+
+.kanban-card.dragging-source {
+    opacity: 0.4;
+}
+
+.kanban-card.priority-none {
+    border-left-width: 0;
+}
+
+.kanban-card.priority-none.card-hover {
+    border-left-width: 2px;
+}
+
+.kanban-card.priority-high {
+    border-left-color: #ff6b6b;
+}
+
+.kanban-card.priority-medium {
+    border-left-color: #ffd93d;
+}
+
+.kanban-card.priority-low {
+    border-left-color: #6bcb77;
+}
+
+.card-buttons-container {
+    opacity: 0;
+    flex-direction: row;
+}
+
+.card-action-button {
+    padding: 2px 4px;
+    margin-left: 4px;
+    cursor: link;
+    border-radius: 3px;
+}
+
+.card-action-button:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+.card-title {
+    font-size: 13px;
+    color: #e0e0e0;
+    -unity-font-style: bold;
+    white-space: normal;
+}
+
+.card-description {
+    font-size: 11px;
+    color: #888888;
+    margin-top: 4px;
+    white-space: normal;
+}
+
+.card-footer {
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    margin-top: 6px;
+}
+
+.card-tag {
+    background-color: #3c3c3c;
+    border-radius: 4px;
+    padding: 2px 6px;
+    margin-right: 4px;
+    margin-bottom: 4px;
+    font-size: 10px;
+    color: #aaaaaa;
+}
+
+.card-tag-more {
+    background-color: #4a4a4a;
+    color: #cccccc;
+}
+
+.card-assignee {
+    width: 22px;
+    height: 22px;
+    border-radius: 11px;
+    margin-right: 4px;
+    -unity-text-align: middle-center;
+    font-size: 10px;
+    color: #ffffff;
+    -unity-font-style: bold;
+    justify-content: center;
+    align-items: center;
+}
+
+.modal-overlay {
+    position: absolute;
+    left: 0;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    justify-content: center;
+    align-items: center;
+}
+
+.modal-content {
+    background-color: #2d2d30;
+    border-radius: 8px;
+    padding: 20px;
+    min-width: 350px;
+    max-width: 70%;
+    max-height: 95%;
+}
+
+.modal-title {
+    font-size: 16px;
+    -unity-font-style: bold;
+    color: #e0e0e0;
+    margin-bottom: 16px;
+}
+
+.modal-field {
+    margin-bottom: 12px;
+}
+
+.modal-field-label {
+    font-size: 11px;
+    color: #888888;
+    margin-bottom: 4px;
+}
+
+.modal-text-field {
+    background-color: #2a2a2c;
+    border-radius: 4px;
+    border-width: 0;
+    padding: 8px;
+    color: #e0e0e0;
+}
+
+.modal-text-field:focus {
+    background-color: #333336;
+}
+
+.modal-text-field > .unity-text-element {
+    background-color: transparent;
+}
+
+.modal-text-field .unity-text-field__input {
+    background-color: transparent;
+    border-width: 0;
+}
+
+.modal-buttons {
+    flex-direction: row;
+    justify-content: flex-end;
+    margin-top: 16px;
+}
+
+.modal-button {
+    padding: 8px 16px;
+    border-radius: 4px;
+    margin-left: 8px;
+    border-width: 0;
+}
+
+.modal-button-small {
+    padding: 2px 8px;
+    border-radius: 4px;
+    border-width: 0;
+    font-size: 10px;
+    background-color: #3c3c3c;
+    color: #aaaaaa;
+}
+
+.modal-button-small:hover {
+    background-color: #4a4a4a;
+    color: #e0e0e0;
+}
+
+.modal-button-primary {
+    background-color: #0e639c;
+    color: #ffffff;
+}
+
+.modal-button-primary:hover {
+    background-color: #1177bb;
+}
+
+.modal-button-secondary {
+    background-color: #3c3c3c;
+    color: #e0e0e0;
+}
+
+.modal-button-secondary:hover {
+    background-color: #4a4a4a;
+}
+
+.modal-button-danger {
+    background-color: #5a3030;
+    color: #ffaaaa;
+}
+
+.modal-button-danger:hover {
+    background-color: #6a4040;
+}
+
+.extras-button {
+    background-color: #3c3c3c;
+    border-radius: 4px;
+    border-width: 0;
+    padding: 8px;
+    margin-bottom: 6px;
+    color: #aaaaaa;
+    -unity-text-align: middle-left;
+}
+
+.extras-button:hover {
+    background-color: #4a4a4a;
+    color: #e0e0e0;
+}
+
+.extras-button:disabled {
+    opacity: 0.5;
+}
+
+.empty-state {
+    flex-grow: 1;
+    justify-content: center;
+    align-items: center;
+    padding: 40px;
+}
+
+.empty-state-text {
+    font-size: 14px;
+    color: #888888;
+    -unity-text-align: middle-center;
+    margin-bottom: 16px;
+}
+
+.priority-selector {
+    flex-direction: row;
+    margin-top: 4px;
+}
+
+.priority-option {
+    padding: 6px 12px;
+    margin-right: 4px;
+    border-radius: 4px;
+    background-color: #3c3c3c;
+    color: #888888;
+    border-width: 0;
+}
+
+.priority-option:hover {
+    background-color: #4a4a4a;
+}
+
+.priority-option.selected {
+    color: #ffffff;
+}
+
+.priority-option.priority-none.selected {
+    background-color: #4a4a4a;
+}
+
+.priority-option.priority-low.selected {
+    background-color: #2a5a32;
+}
+
+.priority-option.priority-medium.selected {
+    background-color: #6b5a1e;
+}
+
+.priority-option.priority-high.selected {
+    background-color: #5a2a2a;
+}
+
+.date-shortcut-btn {
+    background-color: #3c3c3c;
+    border-radius: 4px;
+    padding: 4px 10px;
+    margin-right: 4px;
+    margin-bottom: 4px;
+    border-width: 0;
+    color: #aaaaaa;
+    font-size: 11px;
+}
+
+.date-shortcut-btn:hover {
+    background-color: #4a4a4a;
+    color: #ffffff;
+}
+
+.drag-placeholder {
+    background-color: #3c3c3c;
+    border-radius: 6px;
+    border-width: 0;
+    margin-bottom: 4px;
+}
+
+.drag-placeholder-column {
+    background-color: #3c3c3c;
+    border-radius: 8px;
+    border-width: 0;
+    min-height: 200px;
+    width: 280px;
+    min-width: 280px;
+}
+
+.kanban-column.dragging-source {
+    opacity: 0.4;
+}
+
+.check-container {
+    height: 20px;
+    overflow: hidden;
+    flex-shrink: 0;
+    justify-content: center;
+    align-items: center;
+}
+
+.check-label {
+    font-size: 16px;
+    color: #6bcb77;
+    -unity-text-align: middle-center;
+    width: 20px;
+    height: 20px;
+}
+
+.card-content {
+    flex-grow: 1;
+}
+
+.completed-text {
+    opacity: 0.5;
+    -unity-font-style: italic;
+}
+
+.kanban-card.completed {
+    opacity: 0.8;
+}
+
+.completion-check {
+    font-size: 14px;
+    color: #6bcb77;
+    margin-right: 6px;
+}
+
+.drag-ghost-card {
+    opacity: 0.9;
+}
+
+.drag-ghost-column {
+    opacity: 0.85;
+}
+
+.inline-card-container {
+    background-color: #2d2d30;
+    border-radius: 6px;
+    margin: 0 8px 8px 8px;
+    padding: 6px;
+    border-width: 0;
+    flex-direction: column;
+}
+
+.inline-card-field {
+    background-color: #1e1e1e;
+    border-radius: 4px;
+    border-width: 0;
+    padding: 6px;
+    color: #e0e0e0;
+    font-size: 13px;
+    min-height: 40px;
+    margin-bottom: 6px;
+}
+
+.inline-card-field:focus {
+    background-color: #252528;
+}
+
+.inline-card-field .unity-text-field__input {
+    background-color: transparent;
+    border-width: 0;
+    padding: 0;
+    margin: 0;
+    white-space: normal;
+}
+
+.inline-card-placeholder {
+    position: absolute;
+    left: 6px;
+    top: 6px;
+    color: #666666;
+    font-size: 13px;
+    -unity-font-style: italic;
+}
+
+.inline-card-buttons {
+    flex-direction: row;
+    align-items: center;
+}
+
+.inline-card-add-btn {
+    background-color: #0e639c;
+    color: #ffffff;
+    border-width: 0;
+    border-radius: 4px;
+    padding: 8px 16px;
+    font-size: 13px;
+    -unity-font-style: bold;
+}
+
+.inline-card-add-btn:hover {
+    background-color: #1177bb;
+}
+
+.inline-card-add-btn:active {
+    background-color: #0d5a8c;
+}
+
+.inline-card-cancel-btn {
+    background-color: #3c3c3c;
+    color: #aaaaaa;
+    border-width: 0;
+    border-radius: 4px;
+    padding: 8px 12px;
+    margin-left: 6px;
+    font-size: 14px;
+}
+
+.inline-card-cancel-btn:hover {
+    background-color: #4a4a4a;
+    color: #ffffff;
+}
+
+/* Collapsible sections */
+.collapsible-header {
+    cursor: link;
+}
+
+.collapsible-header:hover {
+    background-color: rgba(255, 255, 255, 0.05);
+}
+
+/* Checklist items */
+.checklist-item {
+    margin-bottom: 4px;
+}
+
+.checklist-item .modal-text-field {
+    margin-bottom: 0;
+}
+
+/* Unity asset dropzone */
+.unity-asset-dropzone {
+    transition: border-color 0.15s, background-color 0.15s;
+}
+
+.unity-asset-dropzone:hover {
+    border-color: #4a4a4a;
+    background-color: rgba(255, 255, 255, 0.02);
+}
+
+/* Unity asset items */
+.unity-asset-item {
+    padding: 4px;
+    border-radius: 4px;
+}
+
+.unity-asset-item:hover {
+    background-color: rgba(255, 255, 255, 0.05);
+}
+
+/* Due date badges */
+.due-badge {
+    border-radius: 3px;
+    padding: 2px 6px;
+    font-size: 9px;
+}
+
+.due-badge-overdue {
+    background-color: #5a2a2a;
+    color: #ffaaaa;
+}
+
+.due-badge-soon {
+    background-color: #5a4a1a;
+    color: #ffddaa;
+}
+
+.due-badge-normal {
+    background-color: #3a3a3f;
+    color: #aaaaaa;
+}
+
+.due-badge-complete {
+    background-color: #2a5a32;
+    color: #aaffaa;
+}
+
+/* Time tracking */
+.timer-running {
+    color: #6bcb77;
+}
+
+/* Attachment items */
+.attachment-item {
+    padding: 4px;
+    border-radius: 4px;
+}
+
+.attachment-item:hover {
+    background-color: rgba(255, 255, 255, 0.05);
+}
+
+/* Comment bubbles */
+.comment-bubble {
+    background-color: #252528;
+    border-radius: 6px;
+    padding: 8px 12px;
+    margin-bottom: 8px;
+}
+
+.comment-author {
+    font-size: 11px;
+    color: #888888;
+    -unity-font-style: bold;
+}
+
+.comment-date {
+    font-size: 10px;
+    color: #666666;
+}
+
+.comment-text {
+    font-size: 12px;
+    color: #cccccc;
+    white-space: normal;
+}
+
+.tag-toggle {
+    background-color: #3c3c3c;
+    border-radius: 12px;
+    padding: 4px 10px;
+    margin-right: 4px;
+    margin-bottom: 4px;
+    border-width: 1px;
+    border-color: transparent;
+    color: #aaaaaa;
+    font-size: 11px;
+}
+
+.tag-toggle:hover {
+    background-color: #4a4a4a;
+    color: #e0e0e0;
+}
+
+.priority-selector {
+    flex-direction: row;
+    flex-wrap: wrap;
+    margin-bottom: 8px;
+}
+
+.priority-option {
+    flex-grow: 1;
+    margin-right: 4px;
+    margin-bottom: 4px;
+    min-width: 60px;
+    -unity-text-align: middle-center;
+}
+
+/* ========================================
+   QUICK CREATE PANEL STYLES
+   ======================================== */
+
+.quick-create-panel {
+    background-color: #1e1e1e;
+    padding: 0;
+    flex-grow: 1;
+}
+
+.quick-create-header {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 20px;
+    background-color: #252526;
+    border-bottom-width: 1px;
+    border-bottom-color: #3c3c3c;
+}
+
+.quick-create-title {
+    font-size: 16px;
+    color: #ffffff;
+    -unity-font-style: bold;
+}
+
+.quick-create-close {
+    background-color: transparent;
+    border-width: 0;
+    color: #808080;
+    font-size: 20px;
+    width: 28px;
+    height: 28px;
+    border-radius: 4px;
+}
+
+.quick-create-close:hover {
+    background-color: #3c3c3c;
+    color: #ffffff;
+}
+
+.quick-create-selectors {
+    flex-direction: column;
+    padding: 16px 20px 8px 20px;
+    background-color: #1e1e1e;
+}
+
+.quick-create-dropdown {
+    margin-bottom: 8px;
+    height: 24px;
+}
+
+.quick-create-dropdown > Label {
+    min-width: 60px;
+    color: #888888;
+}
+
+.quick-create-dropdown > .unity-base-popup-field__input {
+    background-color: #2d2d30;
+    border-color: #3c3c3c;
+    border-radius: 4px;
+}
+
+.quick-create-input {
+    margin: 0 20px 16px 20px;
+    background-color: #2d2d30;
+    border-width: 1px;
+    border-color: #3c3c3c;
+    border-radius: 6px;
+    min-height: 40px;
+}
+
+.quick-create-input > TextInput {
+    padding: 10px 12px;
+    font-size: 14px;
+    color: #e0e0e0;
+    background-color: transparent;
+    border-width: 0;
+}
+
+.quick-create-input:focus {
+    border-color: #0e639c;
+}
+
+.quick-create-placeholder {
+    position: absolute;
+    left: 12px;
+    top: 10px;
+    color: #6d6d6d;
+    font-size: 14px;
+}
+
+.quick-create-options {
+    padding: 0 20px;
+    margin-bottom: 8px;
+}
+
+.quick-create-divider {
+    height: 1px;
+    background-color: #3c3c3c;
+    margin-bottom: 16px;
+}
+
+.quick-create-option-row {
+    flex-direction: row;
+    align-items: center;
+    margin-bottom: 12px;
+}
+
+.quick-create-option-label {
+    width: 80px;
+    color: #888888;
+    font-size: 12px;
+}
+
+.quick-create-priority-btn {
+    background-color: #2d2d30;
+    border-width: 1px;
+    border-color: #3c3c3c;
+    border-radius: 6px;
+    padding: 6px 12px;
+    margin-right: 8px;
+    color: #b0b0b0;
+    font-size: 12px;
+}
+
+.quick-create-priority-btn:hover {
+    background-color: #3c3c3c;
+    border-color: #4a4a4a;
+}
+
+.quick-create-priority-btn.selected {
+    background-color: #0e639c;
+    border-color: #1177bb;
+    color: #ffffff;
+}
+
+.quick-create-tag {
+    background-color: #2d2d30;
+    border-width: 1px;
+    border-color: #3c3c3c;
+    border-radius: 12px;
+    padding: 4px 10px;
+    margin-right: 6px;
+    margin-bottom: 4px;
+    color: #4a9eff;
+    font-size: 11px;
+}
+
+.quick-create-tag:hover {
+    background-color: #3c3c3c;
+}
+
+.quick-create-tag.selected {
+    background-color: #0e639c;
+    border-color: #1177bb;
+    color: #ffffff;
+}
+
+.quick-create-assignee {
+    background-color: #2d2d30;
+    border-width: 1px;
+    border-color: #3c3c3c;
+    border-radius: 6px;
+    padding: 4px 10px;
+    margin-right: 6px;
+    margin-bottom: 4px;
+    color: #b0b0b0;
+    font-size: 11px;
+}
+
+.quick-create-assignee:hover {
+    background-color: #3c3c3c;
+}
+
+.quick-create-assignee.selected {
+    background-color: #0e639c;
+    border-color: #1177bb;
+    color: #ffffff;
+}
+
+.quick-create-date-btn {
+    background-color: #2d2d30;
+    border-width: 1px;
+    border-color: #3c3c3c;
+    border-radius: 6px;
+    padding: 6px 12px;
+    margin-right: 8px;
+    color: #b0b0b0;
+    font-size: 12px;
+}
+
+.quick-create-date-btn:hover {
+    background-color: #3c3c3c;
+    border-color: #4a4a4a;
+    color: #ffffff;
+}
+
+.quick-create-date-btn.selected {
+    background-color: #0e639c;
+    border-color: #1177bb;
+    color: #ffffff;
+}
+
+.quick-create-actions {
+    flex-direction: row;
+    justify-content: flex-end;
+    padding: 16px 20px;
+    background-color: #252526;
+    border-top-width: 1px;
+    border-top-color: #3c3c3c;
+}
+
+.quick-create-btn-secondary {
+    background-color: #3c3c3c;
+    border-width: 1px;
+    border-color: #4a4a4a;
+    border-radius: 6px;
+    padding: 10px 20px;
+    margin-right: 12px;
+    color: #b0b0b0;
+    font-size: 13px;
+}
+
+.quick-create-btn-secondary:hover {
+    background-color: #4a4a4a;
+    color: #ffffff;
+}
+
+.quick-create-btn-primary {
+    background-color: #0e639c;
+    border-width: 0;
+    border-radius: 6px;
+    padding: 10px 24px;
+    color: #ffffff;
+    font-size: 13px;
+    -unity-font-style: bold;
+}
+
+.quick-create-btn-primary:hover {
+    background-color: #1177bb;
+}
+
+/* Template Buttons */
+.template-btn {
+    background-color: #2d2d30;
+    border-width: 1px;
+    border-color: #3c3c3c;
+    border-radius: 4px;
+    padding: 6px 12px;
+    margin-right: 6px;
+    margin-bottom: 6px;
+    color: #aaaaaa;
+    font-size: 12px;
+}
+
+.template-btn:hover {
+    background-color: #3c3c3c;
+    border-color: #4a4a4a;
+    color: #ffffff;
+}
+
+.template-btn.selected {
+    background-color: #0e639c;
+    border-color: #1177bb;
+    color: #ffffff;
+}
+
+/* Calendar Popup */
+.calendar-popup-overlay {
+    position: absolute;
+    left: 0;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.4);
+    justify-content: center;
+    align-items: center;
+}
+
+.calendar-popup-content {
+    background-color: #2d2d30;
+    border-radius: 8px;
+    padding: 12px;
+}
+
+.calendar-nav-btn {
+    background-color: #3c3c3c;
+    border-width: 0;
+    border-radius: 4px;
+    color: #e0e0e0;
+    font-size: 14px;
+    -unity-font-style: bold;
+}
+
+.calendar-nav-btn:hover {
+    background-color: #4a4a4a;
+}
+
+.calendar-day-cell {
+    background-color: #252526;
+    border-width: 0;
+    border-radius: 4px;
+    color: #b0b0b0;
+    font-size: 11px;
+}
+
+.calendar-day-cell:hover {
+    background-color: #3a3a3c;
+    color: #ffffff;
+}
+
+.calendar-shortcut-btn {
+    background-color: #3c3c3c;
+    border-width: 0;
+    border-radius: 4px;
+    padding: 4px 8px;
+    margin: 2px;
+    color: #aaaaaa;
+    font-size: 11px;
+}
+
+.calendar-shortcut-btn:hover {
+    background-color: #4a4a4a;
+    color: #ffffff;
+}
+
+.due-date-button {
+    background-color: #3c3c3c;
+    border-width: 1px;
+    border-color: #4a4a4a;
+    border-radius: 6px;
+    padding: 8px 12px;
+    color: #e0e0e0;
+    font-size: 12px;
+    -unity-text-align: middle-left;
+}
+
+.due-date-button:hover {
+    background-color: #4a4a4a;
+    border-color: #5a5a5a;
+}

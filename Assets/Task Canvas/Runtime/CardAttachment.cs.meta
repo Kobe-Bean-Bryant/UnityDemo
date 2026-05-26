@@ -1,0 +1,18 @@
+fileFormatVersion: 2
+guid: 25e72452c4b958f45a909b503ce7c0c0
+MonoImporter:
+  externalObjects: {}
+  serializedVersion: 2
+  defaultReferences: []
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 350246
+  packageName: Task Canvas - Project Management & Kanban Board
+  packageVersion: 1.1.1
+  assetPath: Assets/Task Canvas/Runtime/CardAttachment.cs
+  uploadId: 871924

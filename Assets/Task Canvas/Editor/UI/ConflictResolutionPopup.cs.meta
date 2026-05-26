@@ -1,0 +1,18 @@
+fileFormatVersion: 2
+guid: 570021c28610f7b49b6aefb633fc65a6
+MonoImporter:
+  externalObjects: {}
+  serializedVersion: 2
+  defaultReferences: []
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 350246
+  packageName: Task Canvas - Project Management & Kanban Board
+  packageVersion: 1.1.1
+  assetPath: Assets/Task Canvas/Editor/UI/ConflictResolutionPopup.cs
+  uploadId: 871924

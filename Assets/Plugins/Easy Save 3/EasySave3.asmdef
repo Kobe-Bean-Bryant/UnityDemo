@@ -1,0 +1,18 @@
+{
+    "name": "EasySave3",
+    "rootNamespace": "",
+    "references": [
+        "Unity.Collections",
+        "Unity.TextMeshPro",
+        "Unity.VisualScripting.Core",
+        "UnityEngine.UI"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "autoReferenced": true,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "defineConstraints": [],
+    "noEngineReferences": false
+}

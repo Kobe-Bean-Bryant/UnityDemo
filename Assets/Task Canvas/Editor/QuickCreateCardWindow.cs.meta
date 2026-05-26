@@ -1,0 +1,18 @@
+fileFormatVersion: 2
+guid: f9c4206482c831f4e9c5e9491f13bd6b
+MonoImporter:
+  externalObjects: {}
+  serializedVersion: 2
+  defaultReferences: []
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 350246
+  packageName: Task Canvas - Project Management & Kanban Board
+  packageVersion: 1.1.1
+  assetPath: Assets/Task Canvas/Editor/QuickCreateCardWindow.cs
+  uploadId: 871924

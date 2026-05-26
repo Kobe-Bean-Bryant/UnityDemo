@@ -1,0 +1,35 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements">
+    <ui:ScrollView>
+        <ui:VisualElement class="container">
+
+            <!-- 标题 + 强调线 -->
+            <ui:Label text="Scene Creator" class="title" />
+            <ui:VisualElement class="title-bar" />
+
+            <!-- Demo 选择 + 场景名 -->
+            <ui:VisualElement class="section-card">
+                <ui:DropdownField label="Target Demo" name="demo-dropdown" />
+                <ui:TextField label="Scene Name" name="scene-name-field" />
+                <ui:VisualElement class="preview-row">
+                    <ui:Label text="Path:" class="preview-key" />
+                    <ui:Label name="preview-label" text="Assets/Demos/.../" class="preview-value" />
+                </ui:VisualElement>
+            </ui:VisualElement>
+
+            <!-- 渲染模式选择 -->
+            <ui:VisualElement class="section-card">
+                <ui:Label text="Rendering Mode" class="section-label" />
+                <ui:RadioButtonGroup name="rendering-mode-group" value="0" class="rendering-mode-group">
+                    <ui:RadioButton label="3D (Universal Renderer)" />
+                    <ui:RadioButton label="2D (2D Renderer)" />
+                </ui:RadioButtonGroup>
+                <ui:Label text="3D: 透视摄像机 + 方向光 | 2D: 正交摄像机 + Global Light 2D" class="hint" />
+            </ui:VisualElement>
+
+            <!-- 创建按钮 + 状态 -->
+            <ui:Button text="Create Scene" name="create-button" class="create-button" />
+            <ui:Label name="status-label" class="status-label" />
+
+        </ui:VisualElement>
+    </ui:ScrollView>
+</ui:UXML>

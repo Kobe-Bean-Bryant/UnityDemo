@@ -1,0 +1,14 @@
+fileFormatVersion: 2
+guid: 9118b442ddb961c429af9b501015a146
+AssemblyDefinitionImporter:
+  externalObjects: {}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 350246
+  packageName: Task Canvas - Project Management & Kanban Board
+  packageVersion: 1.1.1
+  assetPath: Assets/Task Canvas/Runtime/TaskCanvas.Runtime.asmdef
+  uploadId: 871924

@@ -1,0 +1,64 @@
+<!--
+    UXML 是 UI Toolkit 的布局文件，作用类似 HTML。
+    每个 <ui:XXX> 标签对应一个 VisualElement 子类。
+    name 属性用于在 C# 中通过 Q<T>("name") 查询元素。
+    class 属性关联 USS 样式类，类似 HTML 的 class。
+-->
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements">
+    <ui:ScrollView>
+        <ui:VisualElement class="container">
+
+            <!-- 标题 + 强调线 -->
+            <ui:Label text="Demo Creator" class="title" />
+            <ui:VisualElement class="title-bar" />
+
+            <!-- 名称输入 + 预览（卡片式分区） -->
+            <ui:VisualElement class="section-card">
+                <ui:TextField label="Demo Name" name="demo-name-field" />
+                <ui:VisualElement class="preview-row">
+                    <ui:Label text="Path:" class="preview-key" />
+                    <ui:Label name="preview-label" text="Assets/Demos/..." class="preview-value" />
+                </ui:VisualElement>
+                <ui:VisualElement class="preview-row">
+                    <ui:Label text="Namespace:" class="preview-key" />
+                    <ui:Label name="namespace-label" text="..." class="preview-value" />
+                </ui:VisualElement>
+            </ui:VisualElement>
+
+            <!-- 渲染模式选择 -->
+            <ui:VisualElement class="section-card">
+                <ui:Label text="Rendering Mode" class="section-label" />
+                <ui:RadioButtonGroup name="rendering-mode-group" value="0" class="rendering-mode-group">
+                    <ui:RadioButton label="3D (Universal Renderer)" />
+                    <ui:RadioButton label="2D (2D Renderer)" />
+                </ui:RadioButtonGroup>
+                <ui:Label text="3D: 透视摄像机 + 方向光 | 2D: 正交摄像机 + Global Light 2D" class="hint" />
+            </ui:VisualElement>
+
+            <!-- 资源文件夹选择 -->
+            <ui:Foldout text="Asset Folders" value="true" class="section-foldout">
+                <ui:VisualElement name="asset-folders-container" class="toggles-grid" />
+            </ui:Foldout>
+
+            <!-- Resources 开关 -->
+            <ui:VisualElement class="section-card">
+                <ui:Toggle label="Enable Resources Folder" name="resources-toggle" />
+                <ui:Label text="仅在需要 Resources.Load() 动态加载时启用" class="hint" />
+            </ui:VisualElement>
+
+            <ui:VisualElement class="separator" />
+
+            <!-- ASMDEF 引用：分三组 -->
+            <ui:Foldout text="ASMDEF References" value="true" class="section-foldout">
+                <ui:Foldout text="项目 (Assets/)" name="project-refs-foldout" value="true" class="sub-foldout" />
+                <ui:Foldout text="常用 Unity 包" name="common-refs-foldout" value="true" class="sub-foldout" />
+                <ui:Foldout text="其他 Unity 包" name="other-refs-foldout" value="false" class="sub-foldout" />
+            </ui:Foldout>
+
+            <!-- 创建按钮 + 状态 -->
+            <ui:Button text="Create Demo" name="create-button" class="create-button" />
+            <ui:Label name="status-label" class="status-label" />
+
+        </ui:VisualElement>
+    </ui:ScrollView>
+</ui:UXML>

@@ -1,0 +1,126 @@
+# ==== Unity .gitignore（最终优化版）====
+# 策略：白名单核心目录 + 黑名单补充规则
+# 参考：GitHub官方Unity .gitignore + 最佳实践
+# 特点：只跟踪必需文件，自动忽略Library/Temp等缓存目录
+
+# 1) 默认忽略根目录所有内容（白名单策略基础）
+/*
+
+# 2) 【必需】Unity核心目录（官方推荐版本控制的部分）
+!/Assets/
+!/Packages/
+!/ProjectSettings/
+
+# 3) 【可选】项目文档和配置文件
+!/.gitignore
+!/.gitattributes
+!/.editorconfig
+!/README.md
+!/LICENSE
+!/docs/
+
+# 4) 【按需启用】开发环境配置
+# VS Code配置（跨平台推荐，如不用可注释掉）
+!/.vscode/
+
+# GitHub Actions CI配置
+!/.github/
+
+# 5) 【重要】明确忽略UserSettings（个人编辑器设置，不应版本控制）
+/UserSettings/
+
+# 6) OS垃圾文件
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# 7) IDE和构建工具缓存（全局忽略）
+.vs/
+.idea/
+.gradle/
+*.DotSettings.user
+*.user
+*.userprefs
+*.suo
+*.sln.docstates
+*.csproj.user
+
+# 8) Unity特定忽略规则（来自GitHub官方）
+# 构建和导出
+[Bb]uild/
+[Bb]uilds/
+*.apk
+*.aab
+*.unitypackage
+*.app
+
+# 缓存目录（白名单策略下已忽略，显式写出更安全）
+[Ll]ibrary/
+[Tt]emp/
+[Oo]bj/
+[Ll]ogs/
+[Mm]emoryCaptures/
+[Rr]ecordings/
+
+# Unity崩溃和调试文件
+sysinfo.txt
+mono_crash.*
+
+# Blender备份文件
+*.blend1
+*.blend1.meta
+
+# Addressables相关（官方规则）
+/ServerData
+/[Aa]ssets/StreamingAssets/aa*
+/[Aa]ssets/AddressableAssetsData/link.xml*
+/[Aa]ssets/AddressableAssetsData/*/*.bin*
+/[Aa]ssets/Addressables_Temp*
+
+# Visual Scripting生成文件
+/[Aa]ssets/Unity.VisualScripting.Generated/
+
+# Auto-generated scenes by tests
+/[Aa]ssets/[Ii]nit[Tt]est[Ss]cene*.unity*
+
+# 9) 通用临时文件
+*.log
+*.tmp
+*.bak
+*.swp
+*~
+*.orig
+
+# 10) 可忽略的.meta文件（按需启用）
+*.md.meta
+*.pdf.meta
+
+# 11) 【AI工作流】AI 辅助开发配置
+# 原则：跟踪团队共享的规则/设置，忽略个人本地缓存
+# 参考：https://dev.to/geekfarmer/uignore-a-gitignore-for-ai-coding-tools-3h7
+#
+# Claude Code（当前使用）
+!/.claude/
+!/CLAUDE.md
+# .claude/ 内需手动排除的个人文件：
+.claude/settings.local.json
+.claude/statsig/
+.claude/todos/
+.claude/worktrees/
+#
+# AGENTS.md — OpenAI 提出的跨工具项目指令规范，Codex CLI 原生读取，
+# Claude Code 可通过 CLAUDE.md 中的 @AGENTS.md 导入，实现多工具共享同一份规则
+!/AGENTS.md
+#
+# 如需其他 AI 工具，取消对应注释：
+# !/.cursor/          # Cursor — 规则在 .cursor/rules/ 下，注意不可 gitignore 否则规则不加载
+# !/.windsurf/        # Windsurf — 同上，.windsurf/rules/ 不可被 ignore
+# !/.cline/           # Cline / Roo Code
+# OpenAI Codex CLI — 项目指令通过 AGENTS.md 提供（已在上方放行），配置在 ~/.codex/ 无需项目级白名单
+# Google Jules — 云端异步 Agent，通过 GitHub 集成，无本地配置目录
