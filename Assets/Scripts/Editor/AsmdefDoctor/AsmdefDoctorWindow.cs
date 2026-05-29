@@ -7,7 +7,7 @@ using UnityEditor;
 using UnityEngine;
 using UnityEngine.UIElements;
 
-namespace Scripts.Editor
+namespace UnityDemo.Editor
 {
     public class AsmdefDoctorWindow : EditorWindow
     {

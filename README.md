@@ -12,9 +12,10 @@
 ```
 Assets/
 ├── Scripts/
-│   ├── UnityDemo.Shared.asmdef      # 公共代码（所有 Demo 可引用）
+│   ├── UnityDemo.Shared.asmdef      # 公共代码程序集（命名空间 UnityDemo.Shared，所有 Demo 可引用）
+│   ├── Utilities/                   # 公共工具类（Singleton、SimplePool 等）
 │   └── Editor/
-│       ├── Scripts.Editor.asmdef    # Editor 工具
+│       ├── UnityDemo.Editor.asmdef  # Editor 工具程序集（命名空间 UnityDemo.Editor）
 │       ├── DemoCreator/             # Demo 脚手架工具（UI Toolkit）
 │       ├── SceneCreator/            # 独立场景创建工具
 │       ├── AsmdefDoctor/            # 程序集定义诊断 & 修复工具

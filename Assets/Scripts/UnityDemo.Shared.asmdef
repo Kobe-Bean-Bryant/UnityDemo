@@ -1,6 +1,6 @@
 {
     "name": "UnityDemo.Shared",
-    "rootNamespace": "UnityDemo",
+    "rootNamespace": "UnityDemo.Shared",
     "references": [],
     "includePlatforms": [],
     "excludePlatforms": [],

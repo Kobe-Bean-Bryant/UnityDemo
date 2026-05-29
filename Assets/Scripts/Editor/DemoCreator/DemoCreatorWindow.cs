@@ -7,7 +7,7 @@ using UnityEditor.SceneManagement;
 using UnityEngine;
 using UnityEngine.UIElements;
 
-namespace Scripts.Editor
+namespace UnityDemo.Editor
 {
     /// <summary>
     /// Demo 脚手架工具 — 基于 UI Toolkit 构建的 EditorWindow。
@@ -165,7 +165,7 @@ namespace Scripts.Editor
                     continue;
 
                 // 过滤：Editor-only、自身、测试/代码生成程序集
-                if (isEditorOnly || asmdefName == "Scripts.Editor")
+                if (isEditorOnly || asmdefName == "UnityDemo.Editor")
                     continue;
                 if (ShouldHideAsmdef(asmdefName))
                     continue;

@@ -50,7 +50,7 @@ ASMDEF 程序集 → 不能引用 Assembly-CSharp   ❌
 
 - Editor-only 程序集（`includePlatforms` 非空）
 - 名称包含 `.Tests`、`.Sample`、`.CodeGen`、`.Debug` 等后缀的程序集
-- 项目自身的 `Scripts.Editor` 程序集
+- 项目自身的 `UnityDemo.Editor` 程序集
 
 **默认预选**：`UnityDemo.Shared` 始终默认勾选，确保 Demo 可以访问公共代码。
 

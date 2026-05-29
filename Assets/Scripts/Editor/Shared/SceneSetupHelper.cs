@@ -3,7 +3,7 @@ using UnityEditor.SceneManagement;
 using UnityEngine;
 using UnityEngine.Rendering.Universal;
 
-namespace Scripts.Editor
+namespace UnityDemo.Editor
 {
     public enum RenderingMode
     {

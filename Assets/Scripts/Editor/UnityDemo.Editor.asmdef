@@ -1,6 +1,6 @@
 {
-    "name": "Scripts.Editor",
-    "rootNamespace": "Scripts.Editor",
+    "name": "UnityDemo.Editor",
+    "rootNamespace": "UnityDemo.Editor",
     "references": [
         "UnityDemo.Shared",
         "Unity.RenderPipelines.Universal.Runtime",
