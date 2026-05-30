@@ -1,0 +1,17 @@
+{
+    "name": "UnityDemo.Shared.ShapesInteract.Controls",
+    "rootNamespace": "UnityDemo.Shared.ShapesInteract.Controls",
+    "references": [
+        "UnityDemo.Shared.ShapesInteract",
+        "GUID:13a6fdc14ca9df84eb8019bc66fa9e5d"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": false,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}
