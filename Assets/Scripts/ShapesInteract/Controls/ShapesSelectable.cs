@@ -47,7 +47,28 @@ namespace UnityDemo.Shared.ShapesInteract.Controls
         private bool _colorSettled = true;
 
         public Transform Transform => transform;
-        public int SortingOrder => sortingOrder;
+
+        /// <summary>
+        /// 层级。组件模式下它**同时驱动渲染与点击**（类比 uGUI）：写入会同步到
+        /// <see cref="targetGraphic"/> 的 <c>ShapeRenderer.SortingOrder</c>（Unity Renderer 排序，决定渲染），
+        /// 也被 <see cref="ShapesInteractionManager"/> 用于命中优先。
+        /// </summary>
+        public int SortingOrder
+        {
+            get => sortingOrder;
+            set
+            {
+                sortingOrder = value;
+                ApplySortingOrder();
+            }
+        }
+
+        /// <summary>把 <see cref="sortingOrder"/> 推到图形的 Renderer 排序（决定渲染）。子类可重写以一并推子图形。</summary>
+        protected virtual void ApplySortingOrder()
+        {
+            if (targetGraphic == null) targetGraphic = GetComponent<ShapeRenderer>();
+            if (targetGraphic != null) targetGraphic.SortingOrder = sortingOrder;
+        }
 
         /// <summary>是否可交互。设为 false 时不响应点击且显示 disabled 颜色。</summary>
         public bool Interactable
@@ -76,6 +97,7 @@ namespace UnityDemo.Shared.ShapesInteract.Controls
                 Debug.LogWarning(
                     $"[ShapesUI] {name} 的 {GetType().Name} 没有 targetGraphic（也找不到同物体的 ShapeRenderer），将无法命中与变色。", this);
             _hovered = _pressed = false;
+            ApplySortingOrder();
             ShapesInteractionManager.Register(this);
             ApplyColorImmediate(StateColor());
         }
@@ -83,6 +105,12 @@ namespace UnityDemo.Shared.ShapesInteract.Controls
         protected virtual void OnDisable()
         {
             ShapesInteractionManager.Unregister(this);
+        }
+
+        protected virtual void OnValidate()
+        {
+            // 编辑器里改 Sorting Order 即时反映到渲染（WYSIWYG）。
+            ApplySortingOrder();
         }
 
         public virtual bool ContainsLocalPoint(Vector2 localPoint)

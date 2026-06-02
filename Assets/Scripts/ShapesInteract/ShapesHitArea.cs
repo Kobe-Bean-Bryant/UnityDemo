@@ -83,6 +83,20 @@ namespace UnityDemo.Shared.ShapesInteract
         }
 
         /// <summary>
+        /// 点是否落在折线 <paramref name="points"/>（每段半宽 <paramref name="thickness"/>/2 的胶囊链）上。
+        /// <paramref name="closed"/> 时额外测末点→首点的闭合段。用于 Polyline 命中。
+        /// </summary>
+        public static bool PolylineCapsule(Vector2 point, IReadOnlyList<Vector2> points, float thickness, bool closed)
+        {
+            if (points == null || points.Count < 2) return false;
+            for (int i = 0; i < points.Count - 1; i++)
+                if (Capsule(point, points[i], points[i + 1], thickness)) return true;
+            if (closed && points.Count > 2)
+                return Capsule(point, points[points.Count - 1], points[0], thickness);
+            return false;
+        }
+
+        /// <summary>
         /// 把局部点换算成网格 cell 索引。网格从 <paramref name="origin"/> 起、每格 <paramref name="cellSize"/>，
         /// 共 <paramref name="width"/>×<paramref name="height"/> 格。落在网格外返回 false。
         /// </summary>
@@ -95,6 +109,15 @@ namespace UnityDemo.Shared.ShapesInteract
             if (x < 0 || x >= width || y < 0 || y >= height) return false;
             cell = new Vector2Int(x, y);
             return true;
+        }
+
+        /// <summary>把点绕 <paramref name="pivot"/> 旋转 <paramref name="radians"/> 弧度（逆时针）。radians=0 原样返回。</summary>
+        public static Vector2 Rotate(Vector2 point, Vector2 pivot, float radians)
+        {
+            if (radians == 0f) return point;
+            float c = Mathf.Cos(radians), s = Mathf.Sin(radians);
+            Vector2 d = point - pivot;
+            return new Vector2(pivot.x + d.x * c - d.y * s, pivot.y + d.x * s + d.y * c);
         }
 
         private static float Sign(Vector2 p, Vector2 a, Vector2 b)

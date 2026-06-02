@@ -33,6 +33,12 @@ namespace UnityDemo.Shared.ShapesInteract.Controls
             ApplyCheckmark();
         }
 
+        protected override void ApplySortingOrder()
+        {
+            base.ApplySortingOrder();                       // 底图 = SortingOrder
+            if (checkmark != null) checkmark.SortingOrder = SortingOrder + 1;   // 勾在底图之上
+        }
+
         public void OnPointerClick(ShapesPointerEvent e)
         {
             if (!IsInteractable) return;

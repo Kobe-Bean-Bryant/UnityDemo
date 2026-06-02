@@ -41,17 +41,36 @@ namespace UnityDemo.Shared.ShapesInteract.Controls
         public PointerEvent onMove = new PointerEvent();
 
         public Transform Transform => transform;
-        public int SortingOrder => sortingOrder;
+
+        /// <summary>层级：同时驱动渲染（写入 <see cref="shape"/> 的 Renderer 排序）与命中优先（类比 uGUI）。</summary>
+        public int SortingOrder
+        {
+            get => sortingOrder;
+            set
+            {
+                sortingOrder = value;
+                ApplySortingOrder();
+            }
+        }
+
+        private void ApplySortingOrder()
+        {
+            if (shape == null) shape = GetComponent<ShapeRenderer>();
+            if (shape != null) shape.SortingOrder = sortingOrder;
+        }
 
         private void Reset() => shape = GetComponent<ShapeRenderer>();
 
         private void OnEnable()
         {
             if (shape == null) shape = GetComponent<ShapeRenderer>();
+            ApplySortingOrder();
             ShapesInteractionManager.Register(this);
         }
 
         private void OnDisable() => ShapesInteractionManager.Unregister(this);
+
+        private void OnValidate() => ApplySortingOrder();
 
         public bool ContainsLocalPoint(Vector2 localPoint)
             => shape != null && shape.GetBounds().Contains(localPoint);

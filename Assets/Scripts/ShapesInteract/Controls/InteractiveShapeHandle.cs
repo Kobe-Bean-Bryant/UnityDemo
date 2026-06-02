@@ -17,7 +17,17 @@ namespace UnityDemo.Shared.ShapesInteract.Controls
         IShapesPointerDownHandler, IShapesPointerUpHandler,
         IShapesDragHandler, IShapesPointerClickHandler, IShapesPointerMoveHandler
     {
-        private enum Kind { Box, Circle, Ring, Triangle }
+        private enum Kind
+        {
+            Box,
+            Circle,
+            Ring,
+            Triangle,
+            Capsule,
+            Sector,
+            Polygon,
+            Polyline
+        }
 
         public Transform Transform { get; internal set; }
         public int SortingOrder { get; set; }
@@ -39,31 +49,131 @@ namespace UnityDemo.Shared.ShapesInteract.Controls
         // —— 命中几何（由 IDraw 每帧更新）——
         private Kind _kind;
         private Vector2 _center, _size, _a, _b, _c;
-        private float _radius, _inner;
+        private float _radius, _inner, _thickness, _from, _to;
+        private float _rotation;            // 弧度，绕 _center 旋转（仅 Rectangle/Pie/Arc 会设非零）
+        private Vector2[] _points;
+        private bool _closed;
 
-        internal void SetBox(Vector2 center, Vector2 size) { _kind = Kind.Box; _center = center; _size = size; }
-        internal void SetCircle(Vector2 center, float radius) { _kind = Kind.Circle; _center = center; _radius = radius; }
-        internal void SetRing(Vector2 center, float inner, float outer) { _kind = Kind.Ring; _center = center; _inner = inner; _radius = outer; }
-        internal void SetTriangle(Vector2 a, Vector2 b, Vector2 c) { _kind = Kind.Triangle; _a = a; _b = b; _c = c; }
+        internal void SetBox(Vector2 center, Vector2 size)
+        {
+            _kind = Kind.Box;
+            _center = center;
+            _size = size;
+        }
+
+        internal void SetCircle(Vector2 center, float radius)
+        {
+            _kind = Kind.Circle;
+            _center = center;
+            _radius = radius;
+        }
+
+        internal void SetRing(Vector2 center, float inner, float outer)
+        {
+            _kind = Kind.Ring;
+            _center = center;
+            _inner = inner;
+            _radius = outer;
+        }
+
+        internal void SetTriangle(Vector2 a, Vector2 b, Vector2 c)
+        {
+            _kind = Kind.Triangle;
+            _a = a;
+            _b = b;
+            _c = c;
+        }
+
+        internal void SetCapsule(Vector2 a, Vector2 b, float thickness)
+        {
+            _kind = Kind.Capsule;
+            _a = a;
+            _b = b;
+            _thickness = thickness;
+        }
+
+        internal void SetSector(Vector2 center, float inner, float outer, float from, float to)
+        {
+            _kind = Kind.Sector;
+            _center = center;
+            _inner = inner;
+            _radius = outer;
+            _from = from;
+            _to = to;
+        }
+
+        internal void SetPolygon(Vector2[] points)
+        {
+            _kind = Kind.Polygon;
+            _points = points;
+        }
+
+        internal void SetPolyline(Vector2[] points, float thickness, bool closed)
+        {
+            _kind = Kind.Polyline;
+            _points = points;
+            _thickness = thickness;
+            _closed = closed;
+        }
+
+        /// <summary>设置绕 <c>_center</c> 的旋转（弧度）；命中时把待测点逆旋转回正坐标系再判定。</summary>
+        internal void SetRotation(float radians) => _rotation = radians;
 
         public bool ContainsLocalPoint(Vector2 p)
         {
+            // 形状绕 center 旋转了 _rotation，则把待测点逆旋转回去，再按未旋转几何判定。
+            if (_rotation != 0f) p = ShapesHitArea.Rotate(p, _center, -_rotation);
             switch (_kind)
             {
                 case Kind.Box: return ShapesHitArea.Box(p, _center, _size);
                 case Kind.Circle: return ShapesHitArea.Circle(p, _center, _radius);
                 case Kind.Ring: return ShapesHitArea.Ring(p, _center, _inner, _radius);
                 case Kind.Triangle: return ShapesHitArea.Triangle(p, _a, _b, _c);
+                case Kind.Capsule: return ShapesHitArea.Capsule(p, _a, _b, _thickness);
+                case Kind.Sector: return ShapesHitArea.Sector(p, _center, _inner, _radius, _from, _to);
+                case Kind.Polygon: return ShapesHitArea.Polygon(p, _points);
+                case Kind.Polyline: return ShapesHitArea.PolylineCapsule(p, _points, _thickness, _closed);
                 default: return false;
             }
         }
 
-        void IShapesPointerEnterHandler.OnPointerEnter(ShapesPointerEvent e) { Hovered = true; OnEnter?.Invoke(); }
-        void IShapesPointerExitHandler.OnPointerExit(ShapesPointerEvent e) { Hovered = false; OnExit?.Invoke(); }
-        void IShapesPointerDownHandler.OnPointerDown(ShapesPointerEvent e) { Pressed = true; OnDown?.Invoke(); }
-        void IShapesPointerUpHandler.OnPointerUp(ShapesPointerEvent e) { Pressed = false; OnUp?.Invoke(); }
-        void IShapesDragHandler.OnDrag(ShapesPointerEvent e) { OnDrag?.Invoke(e); }
-        void IShapesPointerClickHandler.OnPointerClick(ShapesPointerEvent e) { OnClick?.Invoke(); }
-        void IShapesPointerMoveHandler.OnPointerMove(ShapesPointerEvent e) { OnMove?.Invoke(e); }
+        void IShapesPointerEnterHandler.OnPointerEnter(ShapesPointerEvent e)
+        {
+            Hovered = true;
+            OnEnter?.Invoke();
+        }
+
+        void IShapesPointerExitHandler.OnPointerExit(ShapesPointerEvent e)
+        {
+            Hovered = false;
+            OnExit?.Invoke();
+        }
+
+        void IShapesPointerDownHandler.OnPointerDown(ShapesPointerEvent e)
+        {
+            Pressed = true;
+            OnDown?.Invoke();
+        }
+
+        void IShapesPointerUpHandler.OnPointerUp(ShapesPointerEvent e)
+        {
+            Pressed = false;
+            OnUp?.Invoke();
+        }
+
+        void IShapesDragHandler.OnDrag(ShapesPointerEvent e)
+        {
+            OnDrag?.Invoke(e);
+        }
+
+        void IShapesPointerClickHandler.OnPointerClick(ShapesPointerEvent e)
+        {
+            OnClick?.Invoke();
+        }
+
+        void IShapesPointerMoveHandler.OnPointerMove(ShapesPointerEvent e)
+        {
+            OnMove?.Invoke(e);
+        }
     }
 }

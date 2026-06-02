@@ -52,6 +52,15 @@ namespace UnityDemo.Shared.ShapesInteract.Controls
             ApplyVisuals();
         }
 
+        protected override void ApplySortingOrder()
+        {
+            base.ApplySortingOrder();                       // 轨道 = SortingOrder
+            if (fill != null) fill.SortingOrder = SortingOrder + 1;          // 填充在轨道之上
+            if (handle != null)
+                foreach (var r in handle.GetComponentsInChildren<ShapeRenderer>(true))
+                    r.SortingOrder = SortingOrder + 2;                       // 把手在最上
+        }
+
         public override void OnPointerDown(ShapesPointerEvent e)
         {
             base.OnPointerDown(e);

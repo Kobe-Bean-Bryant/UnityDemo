@@ -16,8 +16,12 @@ namespace UnityDemo.Shared.ShapesInteract.Controls
     /// </code>
     /// 每个 <c>IDraw.XXX(id, ...)</c> 既绘制、又按参数自动建好命中区、并返回一个跨帧持久的句柄（按 id 复用）。
     /// owner 在 <c>OnDisable</c> 里调一次 <see cref="Release"/> 以清理句柄。
+    /// <para>
+    /// 本文件是核心基础设施（上下文 / 句柄表 / 生命周期）；全部图形绘制方法见 <c>IDrawOverloads.cs</c>，
+    /// 二者是同一个 <c>partial</c> 类的两半，镜像 Shapes 自己 <c>Draw.cs</c> / <c>DrawOverloads.cs</c> 的拆法。
+    /// </para>
     /// </summary>
-    public static class IDraw
+    public static partial class IDraw
     {
         private sealed class OwnerState
         {
@@ -70,70 +74,14 @@ namespace UnityDemo.Shared.ShapesInteract.Controls
             Owners.Remove(owner);
         }
 
-        // —— 可交互绘制方法（单色）——
+        // —— internals（绘制方法见 IDrawOverloads.cs）——
 
-        public static InteractiveShapeHandle Rectangle(string id, Vector3 center, Vector2 size, float cornerRadius,
-            Color color, int sortingOrder = 0)
-        {
-            var h = Ensure(id, sortingOrder);
-            h.SetBox(center, size);
-            Draw.Rectangle(center, size, cornerRadius, color);
-            return h;
-        }
-
-        public static InteractiveShapeHandle Disc(string id, Vector3 center, float radius, Color color,
-            int sortingOrder = 0)
-        {
-            var h = Ensure(id, sortingOrder);
-            h.SetCircle(center, radius);
-            Draw.Disc(center, radius, color);
-            return h;
-        }
-
-        public static InteractiveShapeHandle Ring(string id, Vector3 center, float radius, float thickness, Color color,
-            int sortingOrder = 0)
-        {
-            var h = Ensure(id, sortingOrder);
-            h.SetRing(center, radius - thickness * 0.5f, radius + thickness * 0.5f);
-            Draw.Ring(center, radius, thickness, color);
-            return h;
-        }
-
-        public static InteractiveShapeHandle Triangle(string id, Vector3 a, Vector3 b, Vector3 c, Color color,
-            int sortingOrder = 0)
-        {
-            var h = Ensure(id, sortingOrder);
-            h.SetTriangle(a, b, c);
-            Draw.Triangle(a, b, c, color);
-            return h;
-        }
-
-        // —— 四态颜色重载（Rectangle / Disc）：按句柄实时状态自动选色，hover/press 开箱即用 ——
-
-        public static InteractiveShapeHandle Rectangle(string id, Vector3 center, Vector2 size, float cornerRadius,
-            Color normal, Color hover, Color pressed, int sortingOrder = 0)
-        {
-            var h = Ensure(id, sortingOrder);
-            h.SetBox(center, size);
-            Draw.Rectangle(center, size, cornerRadius, Pick(h, normal, hover, pressed));
-            return h;
-        }
-
-        public static InteractiveShapeHandle Disc(string id, Vector3 center, float radius, Color normal, Color hover,
-            Color pressed, int sortingOrder = 0)
-        {
-            var h = Ensure(id, sortingOrder);
-            h.SetCircle(center, radius);
-            Draw.Disc(center, radius, Pick(h, normal, hover, pressed));
-            return h;
-        }
-
-        // —— internals ——
-
-        private static Color Pick(InteractiveShapeHandle h, Color normal, Color hover, Color pressed)
+        /// <summary>按句柄实时状态在三态颜色里选色，供四态颜色重载使用。</summary>
+        internal static Color Pick(InteractiveShapeHandle h, Color normal, Color hover, Color pressed)
             => h.Pressed ? pressed : h.Hovered ? hover : normal;
 
-        private static InteractiveShapeHandle Ensure(string id, int sortingOrder)
+        /// <summary>按 id 取/建当前 owner 的句柄：首次建即注册到 Manager；每次标记 seen 并刷新 sortingOrder。</summary>
+        internal static InteractiveShapeHandle Ensure(string id, int sortingOrder)
         {
             var st = _current ?? throw new InvalidOperationException(
                 "IDraw.XXX 必须在 using(IDraw.Command(cam, owner)) 块内调用。");
@@ -146,6 +94,7 @@ namespace UnityDemo.Shared.ShapesInteract.Controls
             }
 
             h.SortingOrder = sortingOrder;
+            h.SetRotation(0f);          // 每帧复位旋转；旋转重载在 Ensure 之后再 SetRotation 覆盖
             st.Seen.Add(id);
             return h;
         }
