@@ -1,6 +1,6 @@
 # UnityDemo
 
-[![Unity Version](https://img.shields.io/badge/Unity-6000.3.16f1%2B-blue)](https://unity.com/)
+[![Unity Version](https://img.shields.io/badge/Unity-6000.3.17f1%2B-blue)](https://unity.com/)
 [![License](https://img.shields.io/badge/license-Proprietary-red)](LICENSE)
 
 用于实验各种奇思妙想和试用各种工具的 Unity 沙盒项目。
