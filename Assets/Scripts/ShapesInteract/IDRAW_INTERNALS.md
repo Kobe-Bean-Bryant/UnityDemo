@@ -228,6 +228,41 @@ using (Draw.Command(cam)) {
 
 其中 `Rectangle / Disc / Triangle / Pie / Polygon / Quad / RegularPolygon`（实心可填充）另有 `(normal, hover, pressed)` **四态颜色重载**，按句柄 `Hovered/Pressed` 自动选色。
 
+### 圆角 / roundness 扩展重载
+
+三个图元新增了 Shapes 原生支持但 `IDraw` 之前未暴露的圆角能力参数，每种提供单色 + 四态色两个重载：
+
+| 图元 | 新增参数 | 类型 | 实现方式 |
+|------|---------|------|---------|
+| `Polygon` | `roundRadius` | `float`，世界单位绝对圆角半径 | 自研 `BuildRoundedPolygonPath`（见下） |
+| `RegularPolygon` | `roundness` | `float`，0~1 圆角程度 | 直接透传 Shapes 原生 `Draw.RegularPolygon(..., roundness, ...)` |
+| `Triangle` | `roundness` | `float`，0~1 圆角程度 | 直接透传 Shapes 原生 `Draw.Triangle(..., roundness, ...)` |
+
+**命中区**：扩展重载的命中区仍用**不含圆角的原始几何**（`Polygon` → 原始顶点平直多边形，`RegularPolygon` / `Triangle` → 不传 roundness 的原始顶点）。圆角半径较小时差异可忽略。
+
+### `BuildRoundedPolygonPath` 算法
+
+Shapes 原生 `PolygonPath.ArcTo` 不区分凸角/凹角——凹角处圆心落在多边形外侧，导致弧线穿越相邻边形成自相交，EarClipping 三角剖分因此失败。本方法用**角平分线算法**独立构建圆角路径，同时对凸角和凹角正确工作：
+
+```
+dIn = (B-A).normalized,  dOut = (C-B).normalized       // 沿边远离顶点 B 的方向
+α = acos(-dot(dIn, dOut))                                // 两边夹角 ∈ (0, π)
+t = r / tan(α/2)                                         // 切点到顶点距离
+P1 = B - dIn·t,  P2 = B + dOut·t                         // 边上切点
+bisector = (-dIn + dOut).normalized                       // 角平分线方向
+center = B + bisector · (r / sin(α/2))                    // 圆心
+sweep = atan2(P2-center) - atan2(P1-center), 归一化 [-π,π]
+按 sweep 方向角度扫描生成弧点
+```
+
+关键性质：
+- `(-dIn + dOut)` 对**凸角**自然指向多边形内侧、对**凹角**自然指向外侧 → 圆心始终在正确位置
+- 无需缠绕方向检测（Shoelace）、无需凸/凹判定、无需符号翻转
+- 角度扫描（`atan2`）替代 `Slerp`，方向天然与多边形缠绕一致
+- 切点距离钳制到 `min(edgeInLen, edgeOutLen) × 0.49`，防止相邻角弧线重叠
+- `roundRadius ≤ 0` 时退化为 `AddPoints`（无圆角）
+- 弧线细分密度取自 `ShapesConfig.Instance.polylineDefaultPointsPerTurn`
+
 ### 参数顺序规范（遵循 Shapes）
 `IDraw.XXX` 的参数顺序严格沿用 Shapes 官方约定：
 
@@ -249,7 +284,7 @@ IDraw.Arc("a", center, 45f, radius, thickness, from, to, color);
 
 **不在覆盖内**：`Draw` 的 3D 图元（`Sphere / Cuboid / Cube / Cone / Torus` 等）——它们没有 2D 点-在-形状的命中意义。`Text / Texture` 暂未纳入（需要时可按 `Box` 退化命中）。
 
-**注意分配**：`Polygon` / `Polyline` 每帧会构建 `PolygonPath` / `PolylinePath` 与顶点数组，有少量 GC（立即模式本就每帧重建）。`IDrawOverloads.cs` 的 `ToArray` 处留有 TODO：可按 id 缓存数组/Path、点不变时复用。
+**注意分配**：`Polygon` / `Polyline` 每帧会构建 `PolygonPath` / `PolylinePath` 与顶点数组，有少量 GC（立即模式本就每帧重建）。`Polygon` 带 `roundRadius` 时 `BuildRoundedPolygonPath` 会生成更多点（每个角按弧度细分），GC 略增。`IDrawOverloads.cs` 的 `ToArray` 处留有 TODO：可按 id 缓存数组/Path、点不变时复用。
 
 ---
 
@@ -260,7 +295,7 @@ Shapes 是放在 `Assets/ThirdParty/Shapes` 的 **vendored 源码**（手动重�
 - **已适配版本**：Shapes **4.6.0**（见 `Assets/ThirdParty/Shapes/package.json`），Unity 6000.0。
 - **隔离事实**：核心程序集 `UnityDemo.Shared.ShapesInteract`（接口 / 事件 / 输入 / `ShapesHitArea` / Manager）**0 依赖 Shapes**，升级影响为零。耦合**全部**在 `Controls` / `Editor` / `Samples`，且对 `Draw` 的调用**收口在 `IDraw`**（一处可修）。
 - **耦合面清单**（升级时只需复查这些）：
-  - `IDraw` 用到：`Draw.Command`、`Draw.Matrix`、`Draw.{Rectangle, Disc, Ring, Triangle, Line, Pie, Arc, Polygon, Polyline, Quad, RegularPolygon}`；`PolygonPath` / `PolylinePath`（`AddPoint(s)`）；`DiscColors`（依赖 `implicit operator DiscColors(Color)`，`DiscColors.cs`）。
+  - `IDraw` 用到：`Draw.Command`、`Draw.Matrix`、`Draw.{Rectangle, Disc, Ring, Triangle, Line, Pie, Arc, Polygon, Polyline, Quad, RegularPolygon}`；`PolygonPath` / `PolylinePath`（`AddPoint(s)`）；`DiscColors`（依赖 `implicit operator DiscColors(Color)`，`DiscColors.cs`）；`ShapesConfig.Instance.polylineDefaultPointsPerTurn`（`BuildRoundedPolygonPath` 弧线细分密度）。
   - 控件用到：`ImmediateModeShapeDrawer`（基类）、`ShapeRenderer.GetBounds()`、组件 `Rectangle` / `Disc`。
 - **升级 checklist**：
   1. 重新导入 Shapes 后**先编译**——任何签名变化都会编译期报错并指到具体行；

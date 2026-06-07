@@ -37,7 +37,7 @@ namespace UnityDemo.Shared.ShapesInteract.Samples
         private float cellSize = 1f;
         [Range(0f, 0.9f)]
         [SerializeField]
-        private float cellGap = 0.12f;
+        private float cellMargin = 0.12f;
         [SerializeField]
         private float cornerRadius = 0.1f;
         [SerializeField]
@@ -104,13 +104,15 @@ namespace UnityDemo.Shared.ShapesInteract.Samples
 
         public void OnPointerMove(ShapesPointerEvent e)
         {
-            if (ShapesHitArea.TryGetCell(e.LocalPoint, Vector2.zero, cellSize, width, height, out var cell))
+            if (ShapesHitArea.TryGetCell(e.LocalPoint, Vector2.zero, cellSize, width, height, cellMargin, out var cell))
                 _hovered = cell;
+            else
+                _hovered = new Vector2Int(-1, -1);
         }
 
         public void OnPointerClick(ShapesPointerEvent e)
         {
-            if (ShapesHitArea.TryGetCell(e.LocalPoint, Vector2.zero, cellSize, width, height, out var cell))
+            if (ShapesHitArea.TryGetCell(e.LocalPoint, Vector2.zero, cellSize, width, height, cellMargin, out var cell))
             {
                 _selected = cell;
                 Debug.Log($"[Grid] clicked cell ({cell.x}, {cell.y})");
@@ -123,7 +125,7 @@ namespace UnityDemo.Shared.ShapesInteract.Samples
             // IDraw.Command 等价于 Draw.Command(cam) + Draw.Matrix=localToWorldMatrix，并支撑 token 句柄。
             using (IDraw.Command(cam, this))
             {
-                float size = cellSize * (1f - cellGap);
+                float size = cellSize * (1f - cellMargin);
 
                 // 网格 cell：纯装饰，用原生 Draw（先画 → 在底层）
                 for (int x = 0; x < width; x++)

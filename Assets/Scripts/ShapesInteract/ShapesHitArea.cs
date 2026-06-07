@@ -111,6 +111,26 @@ namespace UnityDemo.Shared.ShapesInteract
             return true;
         }
 
+        /// <summary>
+        /// 把局部点换算成网格 cell 索引。网格从 <paramref name="origin"/> 起、每格 <paramref name="cellSize"/>，
+        /// 共 <paramref name="width"/>×<paramref name="height"/> 格。落在网格（1-<paramref name="margin"/>）外返回 false。
+        /// </summary>
+        public static bool TryGetCell(Vector2 point, Vector2 origin, float cellSize, int width, int height,float margin, out Vector2Int cell)
+        {
+            cell = default;
+            if (cellSize <= 0f) return false;
+            float relativeX = point.x - origin.x;
+            float relativeY = point.y - origin.y;
+            int x = Mathf.FloorToInt(relativeX / cellSize);
+            int y = Mathf.FloorToInt(relativeY / cellSize);
+            if (x < 0 || x >= width || y < 0 || y >= height) return false;
+            float diffX = Mathf.Abs((x + 0.5f) * cellSize - relativeX) / cellSize * 2;
+            float diffY = Mathf.Abs((y + 0.5f) * cellSize - relativeY) / cellSize * 2;
+            if (diffX > (1 - margin) || diffY > (1 - margin)) return false;
+            cell = new Vector2Int(x, y);
+            return true;
+        }
+
         /// <summary>把点绕 <paramref name="pivot"/> 旋转 <paramref name="radians"/> 弧度（逆时针）。radians=0 原样返回。</summary>
         public static Vector2 Rotate(Vector2 point, Vector2 pivot, float radians)
         {

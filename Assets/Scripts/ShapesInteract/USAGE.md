@@ -210,7 +210,7 @@ public class MyGrid : ImmediateModeShapeDrawer,
     public override void DrawShapes(Camera cam) { /* 循环画所有 cell */ }
 }
 ```
-**套到 PathfindingDemo**：让 `PathfindingDrawer`（已循环画所有 cell）实现 `IShapesRaycastTarget`（`ContainsLocalPoint` = `[0, W·cellSize]×[0, H·cellSize]`）+ `IShapesPointerClickHandler`，在 `OnPointerClick` 里用 `TryGetCell` 得 `(x,y)` 查 `PathfindingManager.Instance.Grid.GetCell`——一个 target、O(1) 命中、cell 动态增减都不卡。
+**套到 PathfindingDemo**：`PathfindingDrawer` 以网格范式画全部 cell（一个 target），在 `OnPointerClick` 里用 `TryGetCell` 得 `(x,y)` 查 `PathfindingManager.Instance.Grid.GetCell`——一个 target、O(1) 命中。起点标记用 `IDraw.Polygon("start", GetStarVertices(...), starRoundRadius, ...)` 画带圆角的五角星——`GetStarVertices` 的 `innerRadiusRatio` 参数控制胖瘦（0.38 = 标准尖星, 0.5 = 胖星），10 个顶点（5 凸角 + 5 凹角）均被 `BuildRoundedPolygonPath` 正确圆角。
 
 ---
 
@@ -244,6 +244,7 @@ public class CodeMenu : ImmediateModeShapeDrawer
 要点：
 - **入口** `IDraw.Command(cam, this)`（内部就是 `Draw.Command` + `Draw.Matrix`）。块内可混用原生 `Draw.XXX`（纯装饰），按调用顺序绘制（**后画盖先画**，见 [RENDERING §3](./RENDERING.md)）。
 - **方法（覆盖全部 2D 图元）**：`Rectangle / Disc / Ring / Triangle / Line / Pie / Arc / Polygon / Polyline / Quad / RegularPolygon`，每个都「画 + 自动建命中区 + 返回句柄」。其中实心可填充的 `Rectangle / Disc / Triangle / Pie / Polygon / Quad / RegularPolygon` 另有 `(normal, hover, pressed)` 四态颜色重载，hover/press 自动变色。（命中区 ↔ 图元对应、参数顺序规范见 [IDRAW_INTERNALS §8](./IDRAW_INTERNALS.md)。）
+- **圆角扩展**：`Polygon` 新增 `roundRadius`（世界单位，绝对圆角半径）重载，用角平分线算法同时对凸角和凹角做圆角——支持五角星等凹凸混合多边形；`RegularPolygon` 和 `Triangle` 新增 Shapes 原生 `roundness`（0~1 程度）重载。命中区仍用不含圆角的原始几何。详见 [IDRAW_INTERNALS §8](./IDRAW_INTERNALS.md)。
 - **旋转**：`Rectangle / Pie / Arc` 有旋转重载，把 `rotation`（**度数**）放在 `center` 之后，画与命中同步倾斜：
   ```csharp
   IDraw.Rectangle("r", new Vector3(-1,0,0), 30f, new Vector2(2,1), 0.1f, Color.white); // 斜 30°

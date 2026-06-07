@@ -269,6 +269,104 @@ namespace UnityDemo.Shared.ShapesInteract.Controls
             return h;
         }
 
+        // —— 圆角/roundness 扩展重载：补全 Shapes Draw 原生支持但 IDraw 未暴露的能力参数 ——
+
+        /// <summary>
+        /// 任意多边形，所有顶点以 <paramref name="roundRadius"/> 为半径做圆角。
+        /// <para>凸角（外顶点）由 Shapes 原生 <c>PolygonPath.ArcTo</c> 处理；
+        /// 凹角（内顶点）由 <see cref="BuildRoundedPolygonPath"/> 翻转圆心方向处理，
+        /// 确保 ArcTo 圆心落在多边形内侧，避免自相交。</para>
+        /// <para>命中区仍用原始顶点平直多边形（<c>h.SetPolygon</c>），圆角半径较小时差异可忽略。</para>
+        /// </summary>
+        /// <param name="id">跨帧持久的句柄标识。</param>
+        /// <param name="points">多边形顶点列表（缠绕方向不限）。</param>
+        /// <param name="roundRadius">每个顶点的圆角半径（世界单位）。传 0 等同于无圆角版。</param>
+        /// <param name="color">填充颜色。</param>
+        /// <param name="sortingOrder">命中排序。</param>
+        public static InteractiveShapeHandle Polygon(string id, IReadOnlyList<Vector2> points,
+            float roundRadius, Color color, int sortingOrder = 0)
+        {
+            var h = Ensure(id, sortingOrder);
+            Vector2[] verts = ToArray(points);
+            h.SetPolygon(verts);
+            using (var path = BuildRoundedPolygonPath(verts, roundRadius))
+                Draw.Polygon(path, color);
+            return h;
+        }
+
+        /// <inheritdoc cref="Polygon(string,System.Collections.Generic.IReadOnlyList{UnityEngine.Vector2},float,UnityEngine.Color,int)"/>
+        public static InteractiveShapeHandle Polygon(string id, IReadOnlyList<Vector2> points,
+            float roundRadius, Color normal, Color hover, Color pressed, int sortingOrder = 0)
+        {
+            var h = Ensure(id, sortingOrder);
+            Vector2[] verts = ToArray(points);
+            h.SetPolygon(verts);
+            using (var path = BuildRoundedPolygonPath(verts, roundRadius))
+                Draw.Polygon(path, Pick(h, normal, hover, pressed));
+            return h;
+        }
+
+        /// <summary>
+        /// 正多边形，支持 Shapes 原生 <c>roundness</c> 参数（0=锐角，1=完全圆润）。
+        /// <para>命中区为不含 roundness 的平直顶点多边形。</para>
+        /// </summary>
+        /// <param name="id">跨帧持久的句柄标识。</param>
+        /// <param name="center">几何中心。</param>
+        /// <param name="radius">中心到顶点的距离。</param>
+        /// <param name="sideCount">边数（≥3）。</param>
+        /// <param name="angle">首个顶点朝向角度（弧度）。</param>
+        /// <param name="roundness">圆角程度，0~1。0 为锐角，1 为完全圆润。</param>
+        /// <param name="color">填充颜色。</param>
+        /// <param name="sortingOrder">命中排序。</param>
+        public static InteractiveShapeHandle RegularPolygon(string id, Vector3 center, float radius, int sideCount,
+            float angle, float roundness, Color color, int sortingOrder = 0)
+        {
+            var h = Ensure(id, sortingOrder);
+            h.SetPolygon(RegularPolygonVerts(center, radius, sideCount, angle));
+            Draw.RegularPolygon(center, sideCount, radius, angle, roundness, color);
+            return h;
+        }
+
+        /// <inheritdoc cref="RegularPolygon(string,UnityEngine.Vector3,float,int,float,float,UnityEngine.Color,int)"/>
+        public static InteractiveShapeHandle RegularPolygon(string id, Vector3 center, float radius, int sideCount,
+            float angle, float roundness, Color normal, Color hover, Color pressed, int sortingOrder = 0)
+        {
+            var h = Ensure(id, sortingOrder);
+            h.SetPolygon(RegularPolygonVerts(center, radius, sideCount, angle));
+            Draw.RegularPolygon(center, sideCount, radius, angle, roundness, Pick(h, normal, hover, pressed));
+            return h;
+        }
+
+        /// <summary>
+        /// 三角形，支持 Shapes 原生 <c>roundness</c> 参数（0=锐角，1=完全圆润）。
+        /// <para>命中区仍用原始三角形（不含 roundness）。</para>
+        /// </summary>
+        /// <param name="id">跨帧持久的句柄标识。</param>
+        /// <param name="a">顶点 A。</param>
+        /// <param name="b">顶点 B。</param>
+        /// <param name="c">顶点 C。</param>
+        /// <param name="roundness">圆角程度，0~1。0 为锐角，1 为完全圆润。</param>
+        /// <param name="color">填充颜色。</param>
+        /// <param name="sortingOrder">命中排序。</param>
+        public static InteractiveShapeHandle Triangle(string id, Vector3 a, Vector3 b, Vector3 c,
+            float roundness, Color color, int sortingOrder = 0)
+        {
+            var h = Ensure(id, sortingOrder);
+            h.SetTriangle(a, b, c);
+            Draw.Triangle(a, b, c, roundness, color);
+            return h;
+        }
+
+        /// <inheritdoc cref="Triangle(string,UnityEngine.Vector3,UnityEngine.Vector3,UnityEngine.Vector3,float,UnityEngine.Color,int)"/>
+        public static InteractiveShapeHandle Triangle(string id, Vector3 a, Vector3 b, Vector3 c,
+            float roundness, Color normal, Color hover, Color pressed, int sortingOrder = 0)
+        {
+            var h = Ensure(id, sortingOrder);
+            h.SetTriangle(a, b, c);
+            Draw.Triangle(a, b, c, roundness, Pick(h, normal, hover, pressed));
+            return h;
+        }
+
         // —— internals ——
 
         /// <summary>绕 <paramref name="pivot"/> 旋转 <paramref name="deg"/> 度的局部矩阵（叠加到 Draw.Matrix 上）。</summary>
@@ -310,6 +408,97 @@ namespace UnityDemo.Shared.ShapesInteract.Controls
             }
 
             return verts;
+        }
+
+        /// <summary>
+        /// 构建带圆角的 <see cref="PolygonPath"/>，同时支持凸角和凹角。
+        /// <para>
+        /// 对每个顶点，沿两条边各退 <c>t = r / tan(α/2)</c> 得到切点 P1、P2，
+        /// 再沿角平分线 <c>(-dIn + dOut)</c> 放置圆心 <c>C = B + bisector × r / sin(α/2)</c>，
+        /// 最后在 P1→P2 之间做角度扫描生成弧线点。
+        /// </para>
+        /// <para>
+        /// 关键：平分线 <c>(-dIn + dOut)</c> 对凸角自然指向多边形内侧、对凹角自然指向外侧，
+        /// 圆心始终落在正确位置，无需凸/凹判定或符号翻转。
+        /// 弧线用 <c>atan2</c> + 角度扫描（非 Slerp），保证方向与多边形缠绕一致。
+        /// </para>
+        /// </summary>
+        private static PolygonPath BuildRoundedPolygonPath(Vector2[] verts, float roundRadius)
+        {
+            int n = verts.Length;
+            var path = new PolygonPath();
+
+            if (n < 3 || roundRadius <= 0.0001f)
+            {
+                path.AddPoints(verts);
+                return path;
+            }
+
+            float pointsPerTurn = ShapesConfig.Instance.polylineDefaultPointsPerTurn;
+            float twoPi = Mathf.PI * 2f;
+
+            for (int i = 0; i < n; i++)
+            {
+                int prev = (i - 1 + n) % n;
+                int next = (i + 1) % n;
+                Vector2 B = verts[i];
+                Vector2 A = verts[prev];
+                Vector2 C = verts[next];
+
+                // 沿两条边远离 B 的单位方向
+                Vector2 dIn = (B - A).normalized;
+                Vector2 dOut = (C - B).normalized;
+
+                // 接近共线或折叠 → 退化为顶点
+                float edgeDot = Vector2.Dot(dIn, dOut);
+                if (edgeDot > 0.999f || edgeDot < -0.999f)
+                {
+                    path.AddPoint(B);
+                    continue;
+                }
+
+                // 两边夹角 α ∈ (0, π)
+                float cosAngle = Mathf.Clamp(-edgeDot, -1f, 1f);
+                float angle = Mathf.Acos(cosAngle);
+                float halfAngle = angle * 0.5f;
+                float sinHalf = Mathf.Sin(halfAngle);
+                float tanHalf = Mathf.Tan(halfAngle);
+
+                // 切点距顶点距离 t，钳制到不超过半边长
+                float r = roundRadius;
+                float t = r / tanHalf;
+                float maxT = Mathf.Min((B - A).magnitude, (C - B).magnitude) * 0.49f;
+                if (t > maxT)
+                {
+                    t = maxT;
+                    r = t * tanHalf;
+                }
+
+                // 切点（落在各自边上）
+                Vector2 P1 = B - dIn * t;
+                Vector2 P2 = B + dOut * t;
+
+                // 角平分线方向：对凸角指向内侧，对凹角指向外侧 → 始终正确
+                Vector2 bisector = (-dIn + dOut).normalized;
+                Vector2 center = B + bisector * (r / sinHalf);
+
+                // 圆弧：从 P1 到 P2 绕 center 角度扫描
+                float startAngle = Mathf.Atan2(P1.y - center.y, P1.x - center.x);
+                float endAngle = Mathf.Atan2(P2.y - center.y, P2.x - center.x);
+                float sweep = endAngle - startAngle;
+                if (sweep > Mathf.PI) sweep -= twoPi;
+                if (sweep < -Mathf.PI) sweep += twoPi;
+
+                int pointCount = Mathf.Max(2, Mathf.RoundToInt(Mathf.Abs(sweep) / twoPi * pointsPerTurn));
+                for (int j = 0; j < pointCount; j++)
+                {
+                    float frac = pointCount <= 1 ? 0f : j / (float)(pointCount - 1);
+                    float a = startAngle + sweep * frac;
+                    path.AddPoint(center + new Vector2(Mathf.Cos(a), Mathf.Sin(a)) * r);
+                }
+            }
+
+            return path;
         }
     }
 }
