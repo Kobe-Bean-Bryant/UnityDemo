@@ -3,7 +3,9 @@
     "rootNamespace": "PathfindingDemo",
     "references": [
         "GUID:3440d06614db8ce4ab59c9478c776247",
-        "GUID:13a6fdc14ca9df84eb8019bc66fa9e5d"
+        "GUID:13a6fdc14ca9df84eb8019bc66fa9e5d",
+        "GUID:e72c2d118cc7e204cafc4d8de8c6e46a",
+        "GUID:e942064fac96bc54fad5a1493a3b5997"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

@@ -4,6 +4,7 @@ using UnityEngine;
 
 namespace PathfindingDemo
 {
+    [ExecuteAlways]
     public class PathfindingManager : Singleton<PathfindingManager>
     {
         protected override bool IsPersistent => false;
@@ -12,8 +13,8 @@ namespace PathfindingDemo
         public PathfindingDrawer pathfindingDrawer;
 
         [Header("Grid Properties")]
-        public int width;
-        public int height;
+        public int width = 10;
+        public int height = 10;
 
         public Grid Grid { get; private set; }
 
@@ -21,14 +22,31 @@ namespace PathfindingDemo
         // 缓存四边 margin 用于轮询检测，分量为 (left, right, top, bottom)
         private Vector4 _lastMargins;
 
-        private void Start()
+        protected override void Awake()
         {
-            Grid = new Grid(width,height);
-            AdjustFieldOfView();
+            base.Awake();
+            EnsureGrid();
+            if (camera != null && pathfindingDrawer != null)
+                AdjustFieldOfView();
+        }
+
+        /// <summary>确保 Grid 存在且尺寸与序列化字段一致（编辑模式 + 运行时通用）。</summary>
+        public void EnsureGrid()
+        {
+            if (Grid == null || Grid.Width != width || Grid.Height != height)
+                Grid = new Grid(width, height);
+        }
+
+        // 编辑模式下 Inspector 修改 width/height 时触发重建
+        private void OnValidate()
+        {
+            EnsureGrid();
+            if (camera != null) AdjustFieldOfView();
         }
 
         private void Update()
         {
+            if (camera == null || pathfindingDrawer == null) return;
             if (!Mathf.Approximately(camera.aspect, _lastAspect) || CurrentMargins() != _lastMargins)
                 AdjustFieldOfView();
         }
@@ -78,6 +96,14 @@ namespace PathfindingDemo
 
             _lastAspect = camera.aspect;
             _lastMargins = new Vector4(left, right, top, bottom);
+        }
+
+        public void ResizeGrid(int w, int h)
+        {
+            width = w;
+            height = h;
+            Grid = new Grid(w, h);
+            AdjustFieldOfView();
         }
     }
 }

@@ -1,9 +1,7 @@
 {
-    "name": "UnityDemo.Shared.ShapesInteract.Controls",
-    "rootNamespace": "UnityDemo.Shared.ShapesInteract.Controls",
+    "name": "UnityDemo.Shared.ShapesInteract.Drawing",
+    "rootNamespace": "UnityDemo.Shared.ShapesInteract.Drawing",
     "references": [
-        "UnityDemo.Shared.ShapesInteract",
-        "UnityDemo.Shared.ShapesInteract.Drawing",
         "GUID:13a6fdc14ca9df84eb8019bc66fa9e5d"
     ],
     "includePlatforms": [],

@@ -1,7 +1,7 @@
 # IDraw 原理 —— 立即模式可交互绘制是怎么实现的
 
 > **ShapesInteract 文档地图** ·
-> [README](./README.md) 总览与选型 · [USAGE](./USAGE.md) 实操指南 · [RENDERING](./RENDERING.md) 渲染与层级 · **IDRAW_INTERNALS（本篇）** IDraw 原理
+> [README](./README.md) 总览与选型 · [USAGE](./USAGE.md) 实操指南 · [RENDERING](./RENDERING.md) 渲染与层级 · **IDRAW_INTERNALS（本篇）** IDraw 原理 · [POLYGON_ROUNDING_MATH](./Drawing/POLYGON_ROUNDING_MATH.md) 多边形圆角数学
 
 想直接上手用 `IDraw` 看 [USAGE §3](./USAGE.md) 即可；本篇拆解**内部机制**，便于扩展与排错。
 
@@ -234,15 +234,15 @@ using (Draw.Command(cam)) {
 
 | 图元 | 新增参数 | 类型 | 实现方式 |
 |------|---------|------|---------|
-| `Polygon` | `roundRadius` | `float`，世界单位绝对圆角半径 | 自研 `BuildRoundedPolygonPath`（见下） |
+| `Polygon` | `roundRadius` | `float`，世界单位绝对圆角半径 | `PolygonRounding.BuildRoundedPath`（见下，位于 Drawing 程序集） |
 | `RegularPolygon` | `roundness` | `float`，0~1 圆角程度 | 直接透传 Shapes 原生 `Draw.RegularPolygon(..., roundness, ...)` |
 | `Triangle` | `roundness` | `float`，0~1 圆角程度 | 直接透传 Shapes 原生 `Draw.Triangle(..., roundness, ...)` |
 
 **命中区**：扩展重载的命中区仍用**不含圆角的原始几何**（`Polygon` → 原始顶点平直多边形，`RegularPolygon` / `Triangle` → 不传 roundness 的原始顶点）。圆角半径较小时差异可忽略。
 
-### `BuildRoundedPolygonPath` 算法
+### `PolygonRounding.BuildRoundedPath` 算法
 
-Shapes 原生 `PolygonPath.ArcTo` 不区分凸角/凹角——凹角处圆心落在多边形外侧，导致弧线穿越相邻边形成自相交，EarClipping 三角剖分因此失败。本方法用**角平分线算法**独立构建圆角路径，同时对凸角和凹角正确工作：
+Shapes 原生 `PolygonPath.ArcTo` 对 CCW 多边形的凸角产生**外凸弧**（outward bulge）而非 fillet，且对 CW 多边形的凹角同样失败。`PolygonRounding`（位于独立程序集 `Drawing`，仅依赖 ShapesRuntime）用**角平分线算法**独立构建圆角路径，对任意缠绕方向的凸角和凹角都正确工作：
 
 ```
 dIn = (B-A).normalized,  dOut = (C-B).normalized       // 沿边远离顶点 B 的方向
@@ -255,9 +255,11 @@ sweep = atan2(P2-center) - atan2(P1-center), 归一化 [-π,π]
 按 sweep 方向角度扫描生成弧点
 ```
 
+> **数学原理详解**：每个公式的几何推导、Shapes ArcTo 为什么对 CCW 凸角产生外凸弧、以及方向平分线为什么始终正确——参见 [POLYGON_ROUNDING_MATH.md](./Drawing/POLYGON_ROUNDING_MATH.md)。
+
 关键性质：
-- `(-dIn + dOut)` 对**凸角**自然指向多边形内侧、对**凹角**自然指向外侧 → 圆心始终在正确位置
-- 无需缠绕方向检测（Shoelace）、无需凸/凹判定、无需符号翻转
+- `(-dIn + dOut)` 对**凸角**和**凹角**均指向正确一侧 → 圆心始终在 fillet 应在位置
+- 无需缠绕方向检测、无需凸/凹判定、无需符号翻转
 - 角度扫描（`atan2`）替代 `Slerp`，方向天然与多边形缠绕一致
 - 切点距离钳制到 `min(edgeInLen, edgeOutLen) × 0.49`，防止相邻角弧线重叠
 - `roundRadius ≤ 0` 时退化为 `AddPoints`（无圆角）
@@ -284,7 +286,7 @@ IDraw.Arc("a", center, 45f, radius, thickness, from, to, color);
 
 **不在覆盖内**：`Draw` 的 3D 图元（`Sphere / Cuboid / Cube / Cone / Torus` 等）——它们没有 2D 点-在-形状的命中意义。`Text / Texture` 暂未纳入（需要时可按 `Box` 退化命中）。
 
-**注意分配**：`Polygon` / `Polyline` 每帧会构建 `PolygonPath` / `PolylinePath` 与顶点数组，有少量 GC（立即模式本就每帧重建）。`Polygon` 带 `roundRadius` 时 `BuildRoundedPolygonPath` 会生成更多点（每个角按弧度细分），GC 略增。`IDrawOverloads.cs` 的 `ToArray` 处留有 TODO：可按 id 缓存数组/Path、点不变时复用。
+**注意分配**：`Polygon` / `Polyline` 每帧会构建 `PolygonPath` / `PolylinePath` 与顶点数组，有少量 GC（立即模式本就每帧重建）。`Polygon` 带 `roundRadius` 时 `PolygonRounding.BuildRoundedPath` 会生成更多点（每个角按弧度细分），GC 略增。`IDrawOverloads.cs` 的 `ToArray` 处留有 TODO：可按 id 缓存数组/Path、点不变时复用。
 
 ---
 
@@ -295,7 +297,7 @@ Shapes 是放在 `Assets/ThirdParty/Shapes` 的 **vendored 源码**（手动重�
 - **已适配版本**：Shapes **4.6.0**（见 `Assets/ThirdParty/Shapes/package.json`），Unity 6000.0。
 - **隔离事实**：核心程序集 `UnityDemo.Shared.ShapesInteract`（接口 / 事件 / 输入 / `ShapesHitArea` / Manager）**0 依赖 Shapes**，升级影响为零。耦合**全部**在 `Controls` / `Editor` / `Samples`，且对 `Draw` 的调用**收口在 `IDraw`**（一处可修）。
 - **耦合面清单**（升级时只需复查这些）：
-  - `IDraw` 用到：`Draw.Command`、`Draw.Matrix`、`Draw.{Rectangle, Disc, Ring, Triangle, Line, Pie, Arc, Polygon, Polyline, Quad, RegularPolygon}`；`PolygonPath` / `PolylinePath`（`AddPoint(s)`）；`DiscColors`（依赖 `implicit operator DiscColors(Color)`，`DiscColors.cs`）；`ShapesConfig.Instance.polylineDefaultPointsPerTurn`（`BuildRoundedPolygonPath` 弧线细分密度）。
+  - `IDraw` 用到：`Draw.Command`、`Draw.Matrix`、`Draw.{Rectangle, Disc, Ring, Triangle, Line, Pie, Arc, Polygon, Polyline, Quad, RegularPolygon}`；`PolygonPath` / `PolylinePath`（`AddPoint(s)`）；`DiscColors`（依赖 `implicit operator DiscColors(Color)`，`DiscColors.cs`）；`PolygonRounding.BuildRoundedPath`（圆角路径生成，位于 Drawing 程序集）。
   - 控件用到：`ImmediateModeShapeDrawer`（基类）、`ShapeRenderer.GetBounds()`、组件 `Rectangle` / `Disc`。
 - **升级 checklist**：
   1. 重新导入 Shapes 后**先编译**——任何签名变化都会编译期报错并指到具体行；

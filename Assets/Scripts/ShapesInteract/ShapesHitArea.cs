@@ -32,15 +32,16 @@ namespace UnityDemo.Shared.ShapesInteract
         /// 且角度在 [<paramref name="fromAngleRad"/>, <paramref name="toAngleRad"/>]（弧度，逆时针）。
         /// 实心扇用 inner=0；整圆用 from=0,to=2π。
         /// </summary>
-        public static bool Sector(Vector2 point, Vector2 center, float inner, float outer, float fromAngleRad, float toAngleRad)
+        public static bool Sector(Vector2 point, Vector2 center, float inner, float outer, float fromAngleRad,
+            float toAngleRad)
         {
             Vector2 d = point - center;
             float sqr = d.sqrMagnitude;
             if (sqr < inner * inner || sqr > outer * outer) return false;
 
-            float ang = Mathf.Atan2(d.y, d.x);                  // (-π, π]
+            float ang = Mathf.Atan2(d.y, d.x); // (-π, π]
             float sweep = toAngleRad - fromAngleRad;
-            if (sweep >= Mathf.PI * 2f) return true;            // 整圈
+            if (sweep >= Mathf.PI * 2f) return true; // 整圈
             float rel = Mathf.Repeat(ang - fromAngleRad, Mathf.PI * 2f);
             return rel <= Mathf.Repeat(sweep, Mathf.PI * 2f);
         }
@@ -79,6 +80,7 @@ namespace UnityDemo.Shared.ShapesInteract
                     (point.x < (pj.x - pi.x) * (point.y - pi.y) / (pj.y - pi.y) + pi.x))
                     inside = !inside;
             }
+
             return inside;
         }
 
@@ -90,7 +92,8 @@ namespace UnityDemo.Shared.ShapesInteract
         {
             if (points == null || points.Count < 2) return false;
             for (int i = 0; i < points.Count - 1; i++)
-                if (Capsule(point, points[i], points[i + 1], thickness)) return true;
+                if (Capsule(point, points[i], points[i + 1], thickness))
+                    return true;
             if (closed && points.Count > 2)
                 return Capsule(point, points[points.Count - 1], points[0], thickness);
             return false;
@@ -100,7 +103,8 @@ namespace UnityDemo.Shared.ShapesInteract
         /// 把局部点换算成网格 cell 索引。网格从 <paramref name="origin"/> 起、每格 <paramref name="cellSize"/>，
         /// 共 <paramref name="width"/>×<paramref name="height"/> 格。落在网格外返回 false。
         /// </summary>
-        public static bool TryGetCell(Vector2 point, Vector2 origin, float cellSize, int width, int height, out Vector2Int cell)
+        public static bool TryGetCell(Vector2 point, Vector2 origin, float cellSize, int width, int height,
+            out Vector2Int cell)
         {
             cell = default;
             if (cellSize <= 0f) return false;
@@ -115,7 +119,8 @@ namespace UnityDemo.Shared.ShapesInteract
         /// 把局部点换算成网格 cell 索引。网格从 <paramref name="origin"/> 起、每格 <paramref name="cellSize"/>，
         /// 共 <paramref name="width"/>×<paramref name="height"/> 格。落在网格（1-<paramref name="margin"/>）外返回 false。
         /// </summary>
-        public static bool TryGetCell(Vector2 point, Vector2 origin, float cellSize, int width, int height,float margin, out Vector2Int cell)
+        public static bool TryGetCell(Vector2 point, Vector2 origin, float cellSize, int width, int height,
+            float margin, out Vector2Int cell)
         {
             cell = default;
             if (cellSize <= 0f) return false;

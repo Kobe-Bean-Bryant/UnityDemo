@@ -1,7 +1,7 @@
 # ShapesInteract 实操指南
 
 > **ShapesInteract 文档地图** ·
-> [README](./README.md) 总览与选型 · **USAGE（本篇）** 实操指南 · [RENDERING](./RENDERING.md) 渲染与层级 · [IDRAW_INTERNALS](./IDRAW_INTERNALS.md) IDraw 原理
+> [README](./README.md) 总览与选型 · **USAGE（本篇）** 实操指南 · [RENDERING](./RENDERING.md) 渲染与层级 · [IDRAW_INTERNALS](./IDRAW_INTERNALS.md) IDraw 原理 · [POLYGON_ROUNDING_MATH](./Drawing/POLYGON_ROUNDING_MATH.md) 圆角数学
 
 本篇是**怎么用**。三种实现方式（① 组件 / ② 立即自实现 / ③ `IDraw`）的**选型见 [README](./README.md)**；本篇按这三种方式分章给出工作流与代码。涉及「层级 / 渲染 / 字号」只给一句话 + 指针到 [RENDERING](./RENDERING.md)。
 
@@ -210,7 +210,7 @@ public class MyGrid : ImmediateModeShapeDrawer,
     public override void DrawShapes(Camera cam) { /* 循环画所有 cell */ }
 }
 ```
-**套到 PathfindingDemo**：`PathfindingDrawer` 以网格范式画全部 cell（一个 target），在 `OnPointerClick` 里用 `TryGetCell` 得 `(x,y)` 查 `PathfindingManager.Instance.Grid.GetCell`——一个 target、O(1) 命中。起点标记用 `IDraw.Polygon("start", GetStarVertices(...), starRoundRadius, ...)` 画带圆角的五角星——`GetStarVertices` 的 `innerRadiusRatio` 参数控制胖瘦（0.38 = 标准尖星, 0.5 = 胖星），10 个顶点（5 凸角 + 5 凹角）均被 `BuildRoundedPolygonPath` 正确圆角。
+**套到 PathfindingDemo**：`PathfindingDrawer` 以网格范式画全部 cell（一个 target），在 `OnPointerClick` 里用 `TryGetCell` 得 `(x,y)` 查 `PathfindingManager.Instance.Grid.GetCell`——一个 target、O(1) 命中。起点标记用 `IDraw.Polygon("start", GetStarVertices(...), starRoundRadius, ...)` 画带圆角的五角星——`GetStarVertices` 的 `innerRadiusRatio` 参数控制胖瘦（0.38 = 标准尖星, 0.5 = 胖星），10 个顶点（5 凸角 + 5 凹角）均被 `PolygonRounding.BuildRoundedPath` 正确圆角。
 
 ---
 

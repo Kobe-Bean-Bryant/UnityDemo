@@ -1,7 +1,7 @@
 # ShapesInteract —— Shapes 指针交互框架 + 类 uGUI 控件
 
 > **ShapesInteract 文档地图** ·
-> **README（本篇）** 总览与选型 · [USAGE](./USAGE.md) 实操指南 · [RENDERING](./RENDERING.md) 渲染与层级 · [IDRAW_INTERNALS](./IDRAW_INTERNALS.md) IDraw 原理
+> **README（本篇）** 总览与选型 · [USAGE](./USAGE.md) 实操指南 · [RENDERING](./RENDERING.md) 渲染与层级 · [IDRAW_INTERNALS](./IDRAW_INTERNALS.md) IDraw 原理 · [POLYGON_ROUNDING_MATH](./Drawing/POLYGON_ROUNDING_MATH.md) 圆角数学
 
 一套与渲染解耦的指针交互框架，配合 [Shapes](https://acegikmo.com/shapes/) 使用：让 Shapes 图形能响应鼠标/触摸，并提供一套类 uGUI 的控件（Button / Toggle / Slider）。
 
@@ -41,7 +41,8 @@ ShapesInteractionManager.Update
 | 程序集 | 内容 | 引用 |
 |--------|------|------|
 | `UnityDemo.Shared.ShapesInteract` | 接口、事件、输入适配、命中数学（`ShapesHitArea`）、Manager | `Unity.InputSystem` |
-| `UnityDemo.Shared.ShapesInteract.Controls` | `ShapesSelectable` / Button / Toggle / Slider / `ShapeInteractable` / `IDraw` | 核心 + `Shapes Runtime` |
+| `UnityDemo.Shared.ShapesInteract.Drawing` | `PolygonRounding`（圆角路径生成，纯几何工具） | `Shapes Runtime` |
+| `UnityDemo.Shared.ShapesInteract.Controls` | `ShapesSelectable` / Button / Toggle / Slider / `ShapeInteractable` / `IDraw` | 核心 + Drawing + `Shapes Runtime` |
 | `UnityDemo.Shared.ShapesInteract.Controls.Editor` | `GameObject → Shapes UI →` 创建菜单 | Controls + `Shapes Runtime`（仅编辑器） |
 
 ---
