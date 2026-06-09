@@ -61,7 +61,7 @@ namespace UnityDemo.Shared.ShapesInteract.Samples
         {
             Vector3 c = origin + Vector3.right * (i * (btnSize.x + gap));
             var h = IDraw.Rectangle(id, c, btnSize, 0.12f, col, col * 1.25f, col * 0.8f);
-            h.OnClick = () => onClick();
+            h.OnClick = _ => onClick();
 
             // 标签：在按钮之后画=显示在按钮之上（纯装饰、不参与命中）
             Draw.FontSize = labelSize;

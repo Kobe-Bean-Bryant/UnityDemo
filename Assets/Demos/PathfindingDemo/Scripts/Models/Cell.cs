@@ -33,5 +33,16 @@ namespace PathfindingDemo
         {
             Type = Type == CellType.Obstacle ? CellType.Normal : CellType.Obstacle;
         }
+
+        public void SetType(CellType type)
+        {
+            Type = type;
+        }
+
+        /// <summary>设置格子移动代价（仅对 Normal 类型有效）。</summary>
+        public void SetCost(int cost)
+        {
+            _cost = Mathf.Clamp(cost, 1, 10);
+        }
     }
 }

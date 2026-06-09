@@ -11,7 +11,9 @@ namespace PathfindingDemo
     [ExecuteAlways]
     public class PathfindingDrawer : ImmediateModeShapeDrawer,
         IShapesRaycastTarget,
-        IShapesPointerClickHandler
+        IShapesPointerDownHandler,
+        IShapesDragHandler,
+        IShapesPointerUpHandler
     {
         [SerializeField]
         private int sortingOrder;
@@ -106,6 +108,15 @@ namespace PathfindingDemo
         private Color _obstacleColor;
         private Color _pathColor;
 
+        // 左键画笔状态（障碍物刷）
+        private bool _isPainting;
+        private bool _paintToObstacle;
+        private readonly HashSet<Vector2Int> _paintedCells = new HashSet<Vector2Int>();
+
+        // 右键画笔状态（高代价刷）
+        private bool _isCostPainting;
+        private readonly HashSet<Vector2Int> _costPaintedCells = new HashSet<Vector2Int>();
+
         private int Width => PathfindingManager.Instance.Grid.Width;
         private int Height => PathfindingManager.Instance.Grid.Height;
 
@@ -165,11 +176,24 @@ namespace PathfindingDemo
                     for (int y = 0; y < grid.Height; y++)
                     {
                         var cell = grid.GetCell(x, y);
-                        var color = cell != null && cell.Type == CellType.Obstacle
-                            ? _obstacleColor
-                            : _cellWhite1;
+                        Color color;
+                        if (cell != null && cell.Type == CellType.Obstacle)
+                            color = _obstacleColor;
+                        else if (cell != null && cell.Cost > 1)
+                            color = CostBrushHud.CostCellColor(cell.Cost);
+                        else
+                            color = _cellWhite1;
                         var origin = new Vector2((x + 0.5f) * cellSize, (y + 0.5f) * cellSize);
                         Draw.Rectangle(origin, Quaternion.identity, size, cellCornerRadius, color);
+
+                        // 在高代价格子上显示数字
+                        if (cell != null && cell.Cost > 1 && cell.Type != CellType.Obstacle)
+                        {
+                            Draw.FontSize = cellSize * 0.45f;
+                            Draw.Color = cell.Cost >= 6 ? Color.white : new Color(0.2f, 0.2f, 0.2f, 1f);
+                            Draw.Text(new Vector3(origin.x, origin.y, -0.01f),
+                                cell.Cost.ToString(), TextAlign.Center, 5f);
+                        }
                     }
                 }
 
@@ -189,6 +213,8 @@ namespace PathfindingDemo
                         }
                     }
                 }
+
+                // 绘制花费数字
 
                 if (_star != null)
                 {
@@ -215,6 +241,7 @@ namespace PathfindingDemo
         public override void OnDisable()
         {
             base.OnDisable();
+            IDraw.Release(this);
             if (Application.isPlaying)
                 ShapesInteractionManager.Unregister(this);
         }
@@ -225,28 +252,119 @@ namespace PathfindingDemo
         public bool ContainsLocalPoint(Vector2 p)
             => p.x >= 0f && p.x < Width * cellSize && p.y >= 0f && p.y < Height * cellSize;
 
-        public void OnPointerClick(ShapesPointerEvent e)
+        public void OnPointerDown(ShapesPointerEvent e)
         {
             var grid = PathfindingManager.Instance?.Grid;
             if (grid == null) return;
 
             if (ShapesHitArea.TryGetCell(e.LocalPoint, Vector2.zero, cellSize, Width, Height, cellMargin, out var cell))
             {
-                // 不允许在起点或终点上放置障碍
-                if (_star != null && cell.x == _star.PosIndex.x && cell.y == _star.PosIndex.y) return;
-                if (_cross != null && cell.x == _cross.PosIndex.x && cell.y == _cross.PosIndex.y) return;
+                if (IsProtectedCell(cell)) return;
 
                 var gridCell = grid.GetCell(cell.x, cell.y);
-                if (gridCell != null)
+                if (gridCell == null) return;
+
+                if (e.Button == PointerButton.Left)
                 {
-                    gridCell.ToggleType();
-                    Debug.Log($"[Grid] toggled cell ({cell.x}, {cell.y}) → {gridCell.Type}");
+                    // 左键：障碍物刷
+                    _paintToObstacle = gridCell.Type != CellType.Obstacle;
+                    _isPainting = true;
+                    _paintedCells.Clear();
+                    _paintedCells.Add(cell);
+                    ApplyPaint(gridCell);
                 }
+                else if (e.Button == PointerButton.Right)
+                {
+                    // 右键：高代价刷
+                    _isCostPainting = true;
+                    _costPaintedCells.Clear();
+                    _costPaintedCells.Add(cell);
+                    ApplyCostPaint(gridCell);
+                }
+            }
+        }
+
+        public void OnDrag(ShapesPointerEvent e)
+        {
+            var grid = PathfindingManager.Instance?.Grid;
+            if (grid == null) return;
+
+            if (e.Button == PointerButton.Left)
+            {
+                if (!_isPainting) return;
+                if (ShapesHitArea.TryGetCell(e.LocalPoint, Vector2.zero, cellSize, Width, Height, cellMargin,
+                        out var cell))
+                {
+                    if (IsProtectedCell(cell)) return;
+                    if (_paintedCells.Contains(cell)) return;
+
+                    var gridCell = grid.GetCell(cell.x, cell.y);
+                    if (gridCell == null) return;
+
+                    _paintedCells.Add(cell);
+                    ApplyPaint(gridCell);
+                }
+            }
+            else if (e.Button == PointerButton.Right)
+            {
+                if (!_isCostPainting) return;
+                if (ShapesHitArea.TryGetCell(e.LocalPoint, Vector2.zero, cellSize, Width, Height, cellMargin,
+                        out var cell))
+                {
+                    if (IsProtectedCell(cell)) return;
+                    if (_costPaintedCells.Contains(cell)) return;
+
+                    var gridCell = grid.GetCell(cell.x, cell.y);
+                    if (gridCell == null) return;
+
+                    _costPaintedCells.Add(cell);
+                    ApplyCostPaint(gridCell);
+                }
+            }
+        }
+
+        public void OnPointerUp(ShapesPointerEvent e)
+        {
+            if (e.Button == PointerButton.Left)
+            {
+                _isPainting = false;
+                _paintedCells.Clear();
+            }
+            else if (e.Button == PointerButton.Right)
+            {
+                _isCostPainting = false;
+                _costPaintedCells.Clear();
+            }
+        }
+
+        private bool IsProtectedCell(Vector2Int cell)
+        {
+            if (_star != null && cell.x == _star.PosIndex.x && cell.y == _star.PosIndex.y) return true;
+            if (_cross != null && cell.x == _cross.PosIndex.x && cell.y == _cross.PosIndex.y) return true;
+            return false;
+        }
+
+        private void ApplyPaint(Cell gridCell)
+        {
+            if (_paintToObstacle)
+            {
+                if (gridCell.Type != CellType.Obstacle)
+                    gridCell.SetType(CellType.Obstacle);
             }
             else
             {
-                Debug.Log("[Grid] clicked outside the grid");
+                if (gridCell.Type == CellType.Obstacle)
+                    gridCell.SetType(CellType.Normal);
             }
+        }
+
+        /// <summary>右键画刷：设置当前 brushCost 到格子。</summary>
+        private void ApplyCostPaint(Cell gridCell)
+        {
+            if (gridCell.Type == CellType.Obstacle) return;
+            var mgr = PathfindingManager.Instance;
+            if (mgr == null) return;
+            gridCell.SetCost(mgr.brushCost);
         }
 
         /// <summary>

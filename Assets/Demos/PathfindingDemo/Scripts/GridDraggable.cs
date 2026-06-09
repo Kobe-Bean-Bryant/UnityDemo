@@ -85,7 +85,7 @@ namespace PathfindingDemo
         /// 松手回调——重置视觉比例。
         /// 直接赋给 <c>InteractiveShapeHandle.OnUp</c>。
         /// </summary>
-        public void OnUp()
+        public void OnUp(ShapesPointerEvent e)
         {
             Scale = 1f;
         }

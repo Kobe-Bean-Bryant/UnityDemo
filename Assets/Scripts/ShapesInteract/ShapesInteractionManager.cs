@@ -6,8 +6,9 @@ namespace UnityDemo.Shared.ShapesInteract
     /// <summary>
     /// 指针交互的中央派发器（类比 uGUI 的 EventSystem）。场景里需要且仅需要一个。
     /// <para>
-    /// 每帧：读鼠标 → 从相机发射线 → 在所有注册的 <see cref="IShapesRaycastTarget"/> 中找最上层命中者 →
+    /// 每帧：读鼠标快照 → 从相机发射线 → 在所有注册的 <see cref="IShapesRaycastTarget"/> 中找最上层命中者 →
     /// 按状态机（hover / down / drag / click）派发给目标实现的 handler 接口。
+    /// 支持左键和右键的独立状态跟踪，中键状态已读取但暂不派发。
     /// 它从不调用任何 Shapes 绘制 API。
     /// </para>
     /// </summary>
@@ -32,77 +33,111 @@ namespace UnityDemo.Shared.ShapesInteract
         /// <summary>注销一个命中目标（必须在目标的 OnDisable 调用，否则销毁后会抛异常）。</summary>
         public static void Unregister(IShapesRaycastTarget target) => Targets.Remove(target);
 
+        // —— 共享悬停状态（按钮无关，只有一个光标）——
         private IShapesRaycastTarget _hovered;
-        private IShapesRaycastTarget _pressed;
-        private Vector2 _lastPressedLocal;
+
+        // —— 每按钮独立按下状态 ——
+        private struct ButtonState
+        {
+            public IShapesRaycastTarget PressedTarget;
+            public Vector2 LastLocal;
+        }
+
+        private ButtonState _left;
+        private ButtonState _right;
 
         private void Update()
         {
             // 清理「被销毁但未注销」的状态引用，避免后续访问其 Transform 抛 MissingReferenceException。
             if (_hovered is Object ho && ho == null) _hovered = null;
-            if (_pressed is Object po && po == null) _pressed = null;
+            CleanupIfDestroyed(ref _left);
+            CleanupIfDestroyed(ref _right);
 
             var cam = _camera != null ? _camera : Camera.main;
             if (cam == null) return;
 
-            if (!ShapesPointerInput.TryGetMouse(out Vector2 screen, out bool pressed, out bool held, out bool released))
+            // 一次快照读取所有按钮状态
+            if (!ShapesPointerInput.TryGetMouseState(out var mouse))
                 return;
 
-            Ray ray = cam.ScreenPointToRay(screen);
+            Ray ray = cam.ScreenPointToRay(mouse.Position);
             var hit = Raycast(ray, out Vector2 hitLocal, out Vector3 hitWorld);
 
-            // —— 悬停 enter / exit ——
+            // —— 悬停 enter / exit（按钮无关）——
             if (!ReferenceEquals(hit, _hovered))
             {
                 if (_hovered is IShapesPointerExitHandler exit)
-                    exit.OnPointerExit(MakeEvent(_hovered, screen, default, default, default));
+                    exit.OnPointerExit(MakeEvent(_hovered, mouse.Position, default, default, default, PointerButton.Left));
                 if (hit is IShapesPointerEnterHandler enter)
-                    enter.OnPointerEnter(MakeEvent(hit, screen, hitWorld, hitLocal, default));
+                    enter.OnPointerEnter(MakeEvent(hit, mouse.Position, hitWorld, hitLocal, default, PointerButton.Left));
                 _hovered = hit;
             }
 
-            // —— 悬停期间每帧移动 ——
+            // —— 悬停期间每帧移动（按钮无关）——
             if (hit is IShapesPointerMoveHandler move)
-                move.OnPointerMove(MakeEvent(hit, screen, hitWorld, hitLocal, default));
+                move.OnPointerMove(MakeEvent(hit, mouse.Position, hitWorld, hitLocal, default, PointerButton.Left));
 
+            // —— 每按钮独立派发 ——
+            UpdateButton(PointerButton.Left, ref _left, mouse.Left, hit, ray, mouse.Position, hitLocal, hitWorld);
+            UpdateButton(PointerButton.Right, ref _right, mouse.Right, hit, ray, mouse.Position, hitLocal, hitWorld);
+        }
+
+        /// <summary>
+        /// 单个按钮的完整按下/拖拽/抬起/点击状态机。
+        /// </summary>
+        private void UpdateButton(
+            PointerButton button,
+            ref ButtonState state,
+            MouseButtonState input,
+            IShapesRaycastTarget hit,
+            Ray ray,
+            Vector2 screen,
+            Vector2 hitLocal,
+            Vector3 hitWorld)
+        {
             // —— 按下 ——
-            if (pressed && hit != null)
+            if (input.Pressed && hit != null)
             {
-                _pressed = hit;
-                _lastPressedLocal = hitLocal;
+                state.PressedTarget = hit;
+                state.LastLocal = hitLocal;
                 if (hit is IShapesPointerDownHandler down)
-                    down.OnPointerDown(MakeEvent(hit, screen, hitWorld, hitLocal, default));
+                    down.OnPointerDown(MakeEvent(hit, screen, hitWorld, hitLocal, default, button));
             }
 
             // —— 拖拽（在按下的目标上，拖出范围仍跟手）——
-            if (held && _pressed != null && _pressed is IShapesDragHandler drag)
+            if (input.Held && state.PressedTarget != null && state.PressedTarget is IShapesDragHandler drag)
             {
-                if (TryLocal(_pressed, ray, out Vector2 dragLocal, out Vector3 dragWorld))
+                if (TryLocal(state.PressedTarget, ray, out Vector2 dragLocal, out Vector3 dragWorld))
                 {
-                    Vector2 delta = dragLocal - _lastPressedLocal;
-                    _lastPressedLocal = dragLocal;
-                    drag.OnDrag(MakeEvent(_pressed, screen, dragWorld, dragLocal, delta));
+                    Vector2 delta = dragLocal - state.LastLocal;
+                    state.LastLocal = dragLocal;
+                    drag.OnDrag(MakeEvent(state.PressedTarget, screen, dragWorld, dragLocal, delta, button));
                 }
             }
 
             // —— 抬起 + 点击 ——
-            if (released && _pressed != null)
+            if (input.Released && state.PressedTarget != null)
             {
-                // 抬起事件用 _pressed 自己的局部点（指针可能已移开 _pressed）；命中 _pressed 时直接用 hit 的点。
                 Vector2 upLocal = hitLocal;
                 Vector3 upWorld = hitWorld;
-                if (!ReferenceEquals(hit, _pressed) && TryLocal(_pressed, ray, out Vector2 l, out Vector3 w))
+                if (!ReferenceEquals(hit, state.PressedTarget) && TryLocal(state.PressedTarget, ray, out Vector2 l, out Vector3 w))
                 {
                     upLocal = l;
                     upWorld = w;
                 }
 
-                if (_pressed is IShapesPointerUpHandler up)
-                    up.OnPointerUp(MakeEvent(_pressed, screen, upWorld, upLocal, default));
-                if (ReferenceEquals(hit, _pressed) && _pressed is IShapesPointerClickHandler click)
-                    click.OnPointerClick(MakeEvent(_pressed, screen, hitWorld, hitLocal, default));
-                _pressed = null;
+                if (state.PressedTarget is IShapesPointerUpHandler up)
+                    up.OnPointerUp(MakeEvent(state.PressedTarget, screen, upWorld, upLocal, default, button));
+                if (ReferenceEquals(hit, state.PressedTarget) && state.PressedTarget is IShapesPointerClickHandler click)
+                    click.OnPointerClick(MakeEvent(state.PressedTarget, screen, hitWorld, hitLocal, default, button));
+                state.PressedTarget = null;
             }
+        }
+
+        private static void CleanupIfDestroyed(ref ButtonState state)
+        {
+            if (state.PressedTarget is Object obj && obj == null)
+                state.PressedTarget = null;
         }
 
         /// <summary>在所有目标里找命中点，返回 SortingOrder 最大者；无命中返回 null。</summary>
@@ -161,7 +196,8 @@ namespace UnityDemo.Shared.ShapesInteract
         }
 
         private static ShapesPointerEvent MakeEvent(
-            IShapesRaycastTarget target, Vector2 screen, Vector3 world, Vector2 local, Vector2 delta)
+            IShapesRaycastTarget target, Vector2 screen, Vector3 world, Vector2 local, Vector2 delta,
+            PointerButton button)
             => new ShapesPointerEvent
             {
                 Target = target,
@@ -169,6 +205,7 @@ namespace UnityDemo.Shared.ShapesInteract
                 WorldPoint = world,
                 LocalPoint = local,
                 LocalDelta = delta,
+                Button = button,
             };
     }
 }

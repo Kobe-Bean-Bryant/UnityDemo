@@ -144,7 +144,7 @@ namespace UnityDemo.Shared.ShapesInteract.Samples
                 var token = IDraw.Rectangle("grid-token", _tokenPos, tokenAngle, tokenSize, tokenCorner,
                     tokenNormal, tokenHover, tokenPressed, sortingOrder: 1);
                 token.OnDrag = e => _tokenPos += (Vector3)e.LocalDelta; // 局部空间位移（不受斜矩形旋转干扰）
-                token.OnUp = SnapTokenToCell; // 松手吸附到最近格子
+                token.OnUp = _ => SnapTokenToCell(); // 松手吸附到最近格子
             }
         }
 

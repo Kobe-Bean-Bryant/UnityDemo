@@ -19,12 +19,13 @@
 ### 数据流（每帧）
 ```
 ShapesInteractionManager.Update
-  → ShapesPointerInput.TryGetMouse        (新输入优先, 旧输入兜底)
+  → ShapesPointerInput.TryGetMouseState   (新输入优先, 旧输入兜底)
   → camera.ScreenPointToRay
   → 遍历已注册 IShapesRaycastTarget:
         世界射线 → 目标局部空间 → 与 z=0 平面求交 → ContainsLocalPoint
         取 SortingOrder 最大的命中者
-  → 状态机派发: Enter / Exit · Move(悬停每帧) · Down · Drag(含 LocalDelta) · Up · Click
+  → 共享 hover:  Enter / Exit / Move(悬停每帧，按钮无关)
+  → 每按钮独立:  Down · Drag(含 LocalDelta) · Up · Click（左键 / 右键各自维护按下目标）
 ```
 坐标换算全在 Manager 完成，所以一切**与相机位置/缩放/宽高比无关**——目标只拿到干净的**局部坐标**。
 
@@ -36,6 +37,7 @@ ShapesInteractionManager.Update
 - **仿 uGUI EventSystem**：一个中央派发器 + 细粒度 handler，控件只实现自己需要的事件。
 - **核心不依赖 Shapes**：`ShapesInteract` 程序集只用 `Camera`/`Ray`/`Plane`/`Input`（外加 `Unity.InputSystem`），从不调用 Shapes 绘制 API；只负责把「指针在某目标的某局部点做了什么」投递出去。Shapes 依赖被隔离在 `Controls` 程序集。
 - **新旧输入兼容**：`ShapesPointerInput` 用编译宏适配 Active Input Handling 的 Old / New / Both 三种设置。
+- **多按钮支持**：`ShapesPointerInput` 用 `MouseFrameState` 一次快照所有按钮（仿 MonoGame `Mouse.GetState()` 模式），`ShapesInteractionManager` 为左键/右键维护独立的按下-拖拽-抬起状态机，hover/Move 共享（只有一个光标）。事件通过 `ShapesPointerEvent.Button` 标识触发按钮，标准控件自动过滤为仅左键。
 
 ### 程序集结构
 | 程序集 | 内容 | 引用 |

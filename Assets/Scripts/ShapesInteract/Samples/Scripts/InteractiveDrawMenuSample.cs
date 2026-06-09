@@ -52,12 +52,12 @@ namespace UnityDemo.Shared.ShapesInteract.Samples
                 // 按钮 1：点击切换"本 drawer 状态变量"（背景色索引）
                 var btnBg = IDraw.Rectangle("btn-bg", new Vector3(-1.7f, 1.4f, 0f), new Vector2(2.8f, 0.9f), 0.12f,
                     Normal, Hover, Press);
-                btnBg.OnClick = () => _bgIndex = (_bgIndex + 1) % Palette.Length;
+                btnBg.OnClick = _ => _bgIndex = (_bgIndex + 1) % Palette.Length;
 
                 // 按钮 2：点击切换"另一个组件模式 Disc"的颜色（跨对象影响）
                 var btnDisc = IDraw.Rectangle("btn-disc", new Vector3(1.7f, 1.4f, 0f), new Vector2(2.8f, 0.9f), 0.12f,
                     Normal, Hover, Press);
-                btnDisc.OnClick = () =>
+                btnDisc.OnClick = _ =>
                 {
                     _discIndex = (_discIndex + 1) % Palette.Length;
                     if (externalDisc != null) externalDisc.Color = Palette[_discIndex];

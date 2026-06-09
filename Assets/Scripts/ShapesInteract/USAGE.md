@@ -19,7 +19,7 @@
 
 > 就像 uGUI 没有 EventSystem 按钮就不响应：`ShapesInteractionManager` 每帧读输入、做射线命中、派发事件，但它本身**不绘制**任何东西。
 
-输入：自动兼容新/旧输入系统（`Active Input Handling` = Old / New / Both 都行）。
+输入：自动兼容新/旧输入系统（`Active Input Handling` = Old / New / Both 都行）。**支持左键和右键独立交互**（中键已读取但暂不派发）——Manager 维护每按钮独立的按下/拖拽/抬起状态，hover/Move 仍共享（只有一个光标）。
 
 ---
 
@@ -42,7 +42,7 @@
 - **`ShapesSlider`**：`float Value` / `NormalizedValue` + `onValueChanged(float)` + `SetValueWithoutNotify`；约定 轨道=本物体 Rectangle、`fill`=左对齐填充、`handle`=把手（创建菜单已搭好）。
 - **`ShapeInteractable`**（低层通用）：给任意现成 Shape「就地」加交互，暴露 `onClick/onEnter/onExit/onDown/onUp/onDrag/onMove` 全套 UnityEvent，无需写控件类（见下）。
 
-四态颜色（normal/highlighted/pressed/disabled + 过渡时长）与 `interactable` 由基类 `ShapesSelectable` 提供。
+四态颜色（normal/highlighted/pressed/disabled + 过渡时长）与 `interactable` 由基类 `ShapesSelectable` 提供。所有标准控件**仅响应左键**（右键不会触发 Button/Toggle/Slider）。
 
 ### 事件绑定的三种风格（都不过时，按喜好选）
 | 风格 | 怎么写 | 适合 |
@@ -87,10 +87,21 @@ public class MyControl : ShapesSelectable, IShapesPointerClickHandler
     public void OnPointerClick(ShapesPointerEvent e)
     {
         if (!IsInteractable) return;
+        // 基类 ShapesSelectable 已过滤非左键，这里只会在左键点击时触发
         // 用 e.LocalPoint / e.WorldPoint 做事，或改 targetGraphic 等
     }
 }
 ```
+
+> **右键自定义**：标准控件只响应左键。如果你想让自定义逻辑区分左右键，在 handler 里检查 `e.Button`：
+> ```csharp
+> public void OnPointerDown(ShapesPointerEvent e)
+> {
+>     if (e.Button == PointerButton.Left)  DoLeftAction();
+>     if (e.Button == PointerButton.Right) DoRightAction();
+> }
+> ```
+> Manager 为每个按钮维护独立的按下/拖拽状态，左右键可以同时操作不同目标互不干扰。
 
 ---
 
@@ -150,9 +161,9 @@ public class Toolbar : ImmediateModeShapeDrawer
     {
         using (IDraw.Command(cam, this))
         {
-            IDraw.Rectangle("save", new Vector3(-2,0,0), new Vector2(1.5f,0.8f), 0.1f, Color.white).OnClick = () => Debug.Log("save");
-            IDraw.Rectangle("load", new Vector3( 0,0,0), new Vector2(1.5f,0.8f), 0.1f, Color.white).OnClick = () => Debug.Log("load");
-            IDraw.Disc("help", new Vector3(2,0,0), 0.5f, Color.cyan).OnClick = () => Debug.Log("help");
+            IDraw.Rectangle("save", new Vector3(-2,0,0), new Vector2(1.5f,0.8f), 0.1f, Color.white).OnClick = _ => Debug.Log("save");
+            IDraw.Rectangle("load", new Vector3( 0,0,0), new Vector2(1.5f,0.8f), 0.1f, Color.white).OnClick = _ => Debug.Log("load");
+            IDraw.Disc("help", new Vector3(2,0,0), 0.5f, Color.cyan).OnClick = _ => Debug.Log("help");
         }
     }
 }
@@ -210,7 +221,18 @@ public class MyGrid : ImmediateModeShapeDrawer,
     public override void DrawShapes(Camera cam) { /* 循环画所有 cell */ }
 }
 ```
-**套到 PathfindingDemo**：`PathfindingDrawer` 以网格范式画全部 cell（一个 target），在 `OnPointerClick` 里用 `TryGetCell` 得 `(x,y)` 查 `PathfindingManager.Instance.Grid.GetCell`——一个 target、O(1) 命中。起点标记用 `IDraw.Polygon("start", GetStarVertices(...), starRoundRadius, ...)` 画带圆角的五角星——`GetStarVertices` 的 `innerRadiusRatio` 参数控制胖瘦（0.38 = 标准尖星, 0.5 = 胖星），10 个顶点（5 凸角 + 5 凹角）均被 `PolygonRounding.BuildRoundedPath` 正确圆角。
+
+**多按钮网格**：如果网格需要区分左右键操作（如左键画障碍、右键设代价），在 `OnPointerDown`/`OnDrag` 里检查 `e.Button`：
+```csharp
+public void OnPointerDown(ShapesPointerEvent e)
+{
+    if (!ShapesHitArea.TryGetCell(e.LocalPoint, Vector2.zero, cellSize, width, height, out var c)) return;
+    if (e.Button == PointerButton.Left)  PaintObstacle(c);
+    if (e.Button == PointerButton.Right) PaintCost(c);
+}
+```
+
+**套到 PathfindingDemo**：`PathfindingDrawer` 以网格范式画全部 cell（一个 target），左键拖拽画障碍、右键拖拽设移动代价（cost 1-10），在 handler 里用 `e.Button` 区分。`CostBrushHud` 用 `IDraw.Triangle` 画 ◀ ▶ 按钮调整当前画刷代价。起点标记用 `IDraw.Polygon("start", GetStarVertices(...), starRoundRadius, ...)` 画带圆角的五角星——`GetStarVertices` 的 `innerRadiusRatio` 参数控制胖瘦（0.38 = 标准尖星, 0.5 = 胖星），10 个顶点（5 凸角 + 5 凹角）均被 `PolygonRounding.BuildRoundedPath` 正确圆角。
 
 ---
 
@@ -233,7 +255,7 @@ public class CodeMenu : ImmediateModeShapeDrawer
 
             var play = IDraw.Rectangle("play", new Vector3(0,1,0), new Vector2(3,1), 0.15f,
                                        normal: Color.white, hover: Color.gray, pressed: Color.grey);
-            play.OnClick = () => { if (external) external.Color = Color.red; };   // 每帧赋值，幂等
+            play.OnClick = _ => { if (external) external.Color = Color.red; };   // 每帧赋值，幂等；_ 丢弃事件参数
 
             IDraw.Disc("dot", new Vector3(3,1,0), 0.4f, Color.cyan, sortingOrder: 1)
                  .OnDrag = e => Debug.Log(e.LocalDelta);
@@ -251,7 +273,7 @@ public class CodeMenu : ImmediateModeShapeDrawer
   ```
   其余图元的定向：`RegularPolygon` 用 `angle`、`Pie/Arc` 用 `from/to`、点列图元给旋转后的点、`Disc/Ring` 旋转对称无需。（`rotation` 是度数，`from/to`/`angle` 是弧度。）
 - **id**：每个图形给稳定字符串 id，句柄按 id **跨帧持久**（监听器/状态保留）；某帧不再画它就自动注销。
-- **加行为**：句柄是**可赋值委托**——`handle.OnClick = () => …`（每帧赋值幂等，别用 `AddListener` 会每帧累积）。还有 `OnEnter/OnExit/OnDown/OnUp/OnDrag/OnMove` 与实时状态 `Hovered/Pressed`。
+- **加行为**：句柄是**可赋值委托**——所有委托签名统一为 `Action<ShapesPointerEvent>`，用 `e` 接收事件（可检查 `e.Button` 区分左右键）或 `_` 丢弃参数。`handle.OnClick = e => …`（每帧赋值幂等，别用 `AddListener` 会每帧累积）。还有 `OnEnter/OnExit/OnDown/OnUp/OnDrag/OnMove` 与实时状态 `Hovered/Pressed`。
 - **清理**：owner 在 `OnDisable` 调一次 `IDraw.Release(this)`。
 - **边界**：适合少量图形；大量动态项用 §2 网格范式。
 - 原理（句柄/Command/生命周期）见 [IDRAW_INTERNALS](./IDRAW_INTERNALS.md)。
@@ -271,8 +293,8 @@ public class MenuDrawer : ImmediateModeShapeDrawer
     public override void DrawShapes(Camera cam)
     {
         using (IDraw.Command(cam, this))
-            IDraw.Rectangle("btn", new Vector3(-2,0,0), new Vector2(2,1), 0.1f, Color.white)
-                 .OnClick = () => other.tint = Color.red;   // ← 改另一个 Drawer 的状态
+             IDraw.Rectangle("btn", new Vector3(-2,0,0), new Vector2(2,1), 0.1f, Color.white)
+                 .OnClick = _ => other.tint = Color.red;   // ← 改另一个 Drawer 的状态
     }
 }
 // Drawer B：纯绘制，按 tint 画；改了 tint，下一帧自动变
@@ -299,7 +321,7 @@ public class Menu : ImmediateModeShapeDrawer
     {
         using (IDraw.Command(cam, this))
             IDraw.Rectangle("play", pos, size, 0.1f, Color.white)
-                 .OnClick = () => PlayClicked?.Invoke();      // 内部只转发
+                 .OnClick = _ => PlayClicked?.Invoke();      // 内部只转发
     }
 }
 // 外部： menu.PlayClicked += () => Debug.Log("外部收到点击");
@@ -318,6 +340,7 @@ public class Menu : ImmediateModeShapeDrawer
 - **同一个 `ShapesInteractionManager` 同时服务三种方式**：组件控件、立即模式 widget、`IDraw` 句柄都注册到它，走同一套命中与派发。
 - **组件 + 脚本协作**（和 uGUI 一样）：组件控件在 Inspector 接线，回调里调你写的脚本方法，脚本再改其它对象（包括一个不可交互的 Shape）。
 - **混用**：一个场景里「菜单生成的组件按钮」+「挂了立即模式脚本的代码按钮」+「`IDraw` 画的图形」都能正常 hover/click，互不干扰；重叠时由 `SortingOrder` 决定**命中**优先（**渲染**层级见 [RENDERING](./RENDERING.md)）。
+- **多按钮**：左键和右键有**独立的按下/拖拽状态**。左键拖拽目标 A 的同时右键可以点击目标 B，两者互不影响。标准控件（Button/Toggle/Slider）仅响应左键；自定义 handler 通过 `e.Button` 区分按钮（见 §1 / §2）。
 - **多 Drawer 互相影响**：用共享状态对象，见 §3「改别的 Shape」与 `Samples/Scripts/Hud*` 多 Drawer 样例。
 
 ---
@@ -356,20 +379,20 @@ public class Menu : ImmediateModeShapeDrawer
 ### 核心程序集 `UnityDemo.Shared.ShapesInteract`（不依赖 Shapes）
 | 脚本 | 职责 / 关键 API |
 |------|----------------|
-| `ShapesInteractionManager` | 中央派发器（场景放一个）。`[SerializeField] _camera`；静态 `Register(target)` / `Unregister(target)`。 |
+| `ShapesInteractionManager` | 中央派发器（场景放一个）。`[SerializeField] _camera`；静态 `Register(target)` / `Unregister(target)`。支持左键/右键独立按下、拖拽、抬起、点击派发。 |
 | `IShapesRaycastTarget` | 命中契约：`Transform Transform`、`int SortingOrder`、`bool ContainsLocalPoint(Vector2)`。 |
-| `IShapesPointer*Handler`（7 个） | 细粒度事件：`Enter`/`Exit`/`Move`（悬停每帧）/`Down`/`Up`/`Drag`/`Click`。**只实现你需要的**。 |
-| `ShapesPointerEvent`（struct） | 事件数据：`ScreenPosition`、`WorldPoint`、`LocalPoint`、`LocalDelta`、`Target`。 |
-| `ShapesPointerInput` | 新旧输入适配：`TryGetMouse(out screenPos, out pressed, out held, out released)`。 |
+| `IShapesPointer*Handler`（7 个） | 细粒度事件：`Enter`/`Exit`/`Move`（悬停每帧）/`Down`/`Up`/`Drag`/`Click`。**只实现你需要的**。所有 handler 都收到 `ShapesPointerEvent`，其中 `Button` 字段标识触发按钮。 |
+| `ShapesPointerEvent`（struct） | 事件数据：`ScreenPosition`、`WorldPoint`、`LocalPoint`、`LocalDelta`、`Target`、`Button`（`PointerButton` 枚举：`Left`=0 / `Right`=1 / `Middle`=2，默认 `Left`）。 |
+| `ShapesPointerInput` | 新旧输入适配：`TryGetMouseState(out MouseFrameState)` 一次读取所有按钮（`MouseButtonState` 含 `Pressed/Held/Released`）；旧 `TryGetMouse(...)` 保留为兼容包装（只返回左键）。 |
 | `ShapesHitArea` | 命中数学：`Box`/`Circle`/`Ring`/`Sector`/`Capsule`/`Triangle`/`Polygon`/`PolylineCapsule`/`Rotate`，网格助手 `TryGetCell(p, origin, cellSize, w, h, out cell)`。 |
 
 ### 控件程序集 `…ShapesInteract.Controls`（依赖 Shapes）
 | 组件 | 用途 / 关键 API |
 |------|----------------|
-| `ShapesSelectable`（抽象基类） | 命中 + 四态颜色 + `interactable` + `hitPadding` + `SortingOrder`（桥接到 renderer，见 [RENDERING](./RENDERING.md)）。 |
+| `ShapesSelectable`（抽象基类） | 命中 + 四态颜色 + `interactable` + `hitPadding` + `SortingOrder`（桥接到 renderer，见 [RENDERING](./RENDERING.md)）。`OnPointerDown`/`OnPointerUp` 自动过滤非左键。 |
 | `ShapesButton` | `UnityEvent onClick`。 |
 | `ShapesToggle` | `bool IsOn`、`onValueChanged(bool)`、`SetIsOnWithoutNotify`。 |
 | `ShapesSlider` | `float Value`、`NormalizedValue`、`onValueChanged(float)`、`SetValueWithoutNotify`。 |
 | `ShapeInteractable` | 低层通用：给任意 Shape 就地加交互，暴露 `onClick/onEnter/…` 全套 UnityEvent。 |
 | `IDraw`（静态） | 立即模式可交互绘制（§3）：`Command(cam, owner)` / `Release(owner)` + 全部 2D 图元方法。原理见 [IDRAW_INTERNALS](./IDRAW_INTERNALS.md)。 |
-| `InteractiveShapeHandle` | `IDraw.XXX` 返回的句柄：`Hovered/Pressed` + 可赋值委托 `OnClick/OnEnter/OnExit/OnDown/OnUp/OnDrag/OnMove`。 |
+| `InteractiveShapeHandle` | `IDraw.XXX` 返回的句柄：`Hovered/Pressed` + 可赋值委托 `OnClick/OnEnter/OnExit/OnDown/OnUp/OnDrag/OnMove`（统一签名 `Action<ShapesPointerEvent>`，可检查 `e.Button` 区分按钮）。 |

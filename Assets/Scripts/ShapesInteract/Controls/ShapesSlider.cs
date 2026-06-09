@@ -64,11 +64,13 @@ namespace UnityDemo.Shared.ShapesInteract.Controls
         public override void OnPointerDown(ShapesPointerEvent e)
         {
             base.OnPointerDown(e);
+            if (e.Button != PointerButton.Left) return;
             if (IsInteractable) SetValueFromLocalX(e.LocalPoint.x, true);
         }
 
         public void OnDrag(ShapesPointerEvent e)
         {
+            if (e.Button != PointerButton.Left) return;
             if (IsInteractable) SetValueFromLocalX(e.LocalPoint.x, true);
         }
 

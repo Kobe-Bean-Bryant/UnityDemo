@@ -19,6 +19,7 @@ namespace UnityDemo.Shared.ShapesInteract.Controls
         public void OnPointerClick(ShapesPointerEvent e)
         {
             if (!IsInteractable) return;
+            if (e.Button != PointerButton.Left) return;
             onClick?.Invoke();
         }
     }

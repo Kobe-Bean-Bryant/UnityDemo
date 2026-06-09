@@ -7,7 +7,7 @@ namespace UnityDemo.Shared.ShapesInteract.Controls
     /// 一次 <see cref="IDraw"/> 可交互绘制对应的持久句柄（普通 C# 对象，非 MonoBehaviour）。
     /// 实现 <see cref="IShapesRaycastTarget"/> 与各 handler 接口；命中区按形状用 <see cref="ShapesHitArea"/> 判定。
     /// <para>
-    /// 立即模式每帧重画，所以事件用<b>可赋值委托</b>（<c>handle.OnClick = () => ...</c>，每帧重新赋值是幂等的），
+    /// 立即模式每帧重画，所以事件用<b>可赋值委托</b>（<c>handle.OnClick = e => ...</c>，每帧重新赋值是幂等的），
     /// 不要用 AddListener（会每帧累积）。另暴露实时状态 <see cref="Hovered"/> / <see cref="Pressed"/>。
     /// </para>
     /// </summary>
@@ -37,12 +37,12 @@ namespace UnityDemo.Shared.ShapesInteract.Controls
         /// <summary>是否正被按住。</summary>
         public bool Pressed { get; private set; }
 
-        // 可赋值的行为委托（每帧赋值幂等）
-        public Action OnClick;
-        public Action OnEnter;
-        public Action OnExit;
-        public Action OnDown;
-        public Action OnUp;
+        // 可赋值的行为委托（每帧赋值幂等）。所有委托都携带 ShapesPointerEvent 以便消费者检查 e.Button。
+        public Action<ShapesPointerEvent> OnClick;
+        public Action<ShapesPointerEvent> OnEnter;
+        public Action<ShapesPointerEvent> OnExit;
+        public Action<ShapesPointerEvent> OnDown;
+        public Action<ShapesPointerEvent> OnUp;
         public Action<ShapesPointerEvent> OnDrag;
         public Action<ShapesPointerEvent> OnMove;
 
@@ -140,25 +140,25 @@ namespace UnityDemo.Shared.ShapesInteract.Controls
         void IShapesPointerEnterHandler.OnPointerEnter(ShapesPointerEvent e)
         {
             Hovered = true;
-            OnEnter?.Invoke();
+            OnEnter?.Invoke(e);
         }
 
         void IShapesPointerExitHandler.OnPointerExit(ShapesPointerEvent e)
         {
             Hovered = false;
-            OnExit?.Invoke();
+            OnExit?.Invoke(e);
         }
 
         void IShapesPointerDownHandler.OnPointerDown(ShapesPointerEvent e)
         {
             Pressed = true;
-            OnDown?.Invoke();
+            OnDown?.Invoke(e);
         }
 
         void IShapesPointerUpHandler.OnPointerUp(ShapesPointerEvent e)
         {
             Pressed = false;
-            OnUp?.Invoke();
+            OnUp?.Invoke(e);
         }
 
         void IShapesDragHandler.OnDrag(ShapesPointerEvent e)
@@ -168,7 +168,7 @@ namespace UnityDemo.Shared.ShapesInteract.Controls
 
         void IShapesPointerClickHandler.OnPointerClick(ShapesPointerEvent e)
         {
-            OnClick?.Invoke();
+            OnClick?.Invoke(e);
         }
 
         void IShapesPointerMoveHandler.OnPointerMove(ShapesPointerEvent e)

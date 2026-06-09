@@ -136,6 +136,7 @@ namespace UnityDemo.Shared.ShapesInteract.Controls
 
         public virtual void OnPointerDown(ShapesPointerEvent e)
         {
+            if (e.Button != PointerButton.Left) return;
             if (interactable)
             {
                 _pressed = true;
@@ -145,6 +146,7 @@ namespace UnityDemo.Shared.ShapesInteract.Controls
 
         public virtual void OnPointerUp(ShapesPointerEvent e)
         {
+            if (e.Button != PointerButton.Left) return;
             _pressed = false;
             RefreshTargetColor();
         }

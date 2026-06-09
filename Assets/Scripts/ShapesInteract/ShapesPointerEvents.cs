@@ -3,6 +3,16 @@ using UnityEngine;
 namespace UnityDemo.Shared.ShapesInteract
 {
     /// <summary>
+    /// 触发指针事件的鼠标按钮。默认值 <c>Left = 0</c> 保证未初始化时行为与旧代码一致。
+    /// </summary>
+    public enum PointerButton
+    {
+        Left   = 0,
+        Right  = 1,
+        Middle = 2
+    }
+
+    /// <summary>
     /// 一次指针事件携带的数据。坐标换算全部由 <see cref="ShapesInteractionManager"/> 完成。
     /// </summary>
     public struct ShapesPointerEvent
@@ -21,6 +31,9 @@ namespace UnityDemo.Shared.ShapesInteract
 
         /// <summary>触发本事件的命中目标。</summary>
         public IShapesRaycastTarget Target;
+
+        /// <summary>触发本事件的鼠标按钮。默认 <see cref="PointerButton.Left"/>。</summary>
+        public PointerButton Button;
     }
 
     // 仿 uGUI EventSystem 的细粒度 handler 接口：目标只需实现自己关心的那几个。

@@ -11,7 +11,7 @@ namespace UnityDemo.Shared.ShapesInteract.Controls
     /// <code>
     /// using (IDraw.Command(cam, this)) {          // 替代 Draw.Command(cam) + Draw.Matrix
     ///     var btn = IDraw.Rectangle("play", pos, size, 0.15f, Color.white);
-    ///     btn.OnClick = () => ...;                // 每帧赋值，幂等
+    ///     btn.OnClick = e => ...;               // 每帧赋值，幂等；e.Button 可区分左右键
     /// }
     /// </code>
     /// 每个 <c>IDraw.XXX(id, ...)</c> 既绘制、又按参数自动建好命中区、并返回一个跨帧持久的句柄（按 id 复用）。

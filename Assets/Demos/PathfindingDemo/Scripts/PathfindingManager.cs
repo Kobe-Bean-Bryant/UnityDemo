@@ -18,6 +18,11 @@ namespace PathfindingDemo
         public int width = 10;
         public int height = 10;
 
+        [Header("Cost Brush")]
+        [Tooltip("右键画刷当前设置的代价值 (1-10)。")]
+        [Range(1, 10)]
+        public int brushCost = 5;
+
         public Grid Grid { get; private set; }
 
         private float _lastAspect;
@@ -128,9 +133,11 @@ namespace PathfindingDemo
             if (startCell.Type == CellType.Obstacle || goalCell.Type == CellType.Obstacle)
                 return new ReadOnlyCollection<Vector2>(vertices);
 
-            // A* 算法
-            var frontier = new PriorityQueue<Vector2Int, float>();
-            frontier.Enqueue(starIndex, 0f);
+            // A* 算法：优先级 = (f, -g, counter) 复合键保证确定性
+            // f = newCost + heuristic，-g 使同 f 值时优先选更深的路径（Red Blob Games 推荐）
+            var frontier = new PriorityQueue<Vector2Int, (float f, float negG, int counter)>();
+            int counter = 0;
+            frontier.Enqueue(starIndex, (0f, 0f, counter++));
 
             var cameFrom = new Dictionary<Vector2Int, Vector2Int> { [starIndex] = starIndex };
             var costSoFar = new Dictionary<Vector2Int, float> { [starIndex] = 0f };
@@ -148,8 +155,9 @@ namespace PathfindingDemo
                     if (!costSoFar.TryGetValue(next, out float prevCost) || newCost < prevCost)
                     {
                         costSoFar[next] = newCost;
-                        float priority = newCost + Heuristic(crossIndex, next);
-                        frontier.Enqueue(next, priority);
+                        float h = Heuristic(crossIndex, next);
+                        float priority = newCost + h;
+                        frontier.Enqueue(next, (priority, -newCost, counter++));
                         cameFrom[next] = current;
                     }
                 }

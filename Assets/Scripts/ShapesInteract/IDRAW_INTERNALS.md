@@ -26,7 +26,7 @@ public override void DrawShapes(Camera cam)
 {
     using (IDraw.Command(cam, this))                  // 替代 Draw.Command(cam) + Draw.Matrix
         IDraw.Rectangle("play", pos, size, 0.1f, Color.white)
-             .OnClick = () => Debug.Log("play");       // 拿句柄挂行为
+             .OnClick = e => Debug.Log("play");       // 拿句柄挂行为
 }
 ```
 
@@ -90,9 +90,9 @@ public bool ContainsLocalPoint(Vector2 p)
 
 ### ③ 实时状态 + 行为委托
 - `bool Hovered`、`bool Pressed` —— 由 Enter/Exit、Down/Up 维护，**跨帧保留**（不是每帧重置）。四态颜色重载就是读它俩选色。
-- 可赋值委托：`Action OnClick/OnEnter/OnExit/OnDown/OnUp`、`Action<ShapesPointerEvent> OnDrag/OnMove`。7 个 handler 接口的实现里只做两件事：更新状态、转调对应委托。例如：
+- 可赋值委托：统一签名 `Action<ShapesPointerEvent>` 的 `OnClick/OnEnter/OnExit/OnDown/OnUp/OnDrag/OnMove`——所有委托都携带完整事件数据，消费者可检查 `e.Button` 区分左右键，或用 `_` 丢弃参数。7 个 handler 接口的实现里只做两件事：更新状态、转调对应委托。例如：
   ```csharp
-  void IShapesPointerDownHandler.OnPointerDown(ShapesPointerEvent e) { Pressed = true; OnDown?.Invoke(); }
+  void IShapesPointerDownHandler.OnPointerDown(ShapesPointerEvent e) { Pressed = true; OnDown?.Invoke(e); }
   ```
 
 ---
@@ -147,12 +147,12 @@ DrawShapes 第 N+1 帧: 只画了 "a"
 
 ## 6. 为什么用「可赋值委托」而不是 `AddListener`
 
-立即模式**每帧都会重跑 `DrawShapes`**，于是每帧都会执行一次 `IDraw.Rectangle("play", ...).OnClick = ...`。
+立即模式**每帧都会重跑 `DrawShapes`**，于是每帧都会执行一次 `IDraw.Rectangle("play", ...).OnClick = e => ...`。
 
-- **可赋值委托（`OnClick = ...`）是幂等的**：每帧重新赋同一个值，结果不变。✓
+- **可赋值委托（`OnClick = e => ...`）是幂等的**：每帧重新赋同一个值，结果不变。✓
 - 若改用 `AddListener` 风格，会**每帧累积一个监听器**，一秒钟挂上几十个，点一次触发几十次。✗
 
-所以句柄的事件设计成 `public Action OnClick;` 这种**直接赋值**字段。需要让外部监听时的两种干净写法（暴露 Drawer 自己的 `event`、或把句柄存出来）见 [USAGE §3「让外部监听 IDraw 的事件」](./USAGE.md)。
+所以句柄的事件设计成 `public Action<ShapesPointerEvent> OnClick;` 这种**直接赋值**字段。需要让外部监听时的两种干净写法（暴露 Drawer 自己的 `event`、或把句柄存出来）见 [USAGE §3「让外部监听 IDraw 的事件」](./USAGE.md)。
 
 ---
 
