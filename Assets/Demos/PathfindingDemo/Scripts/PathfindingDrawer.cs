@@ -103,6 +103,8 @@ namespace PathfindingDemo
         private Color _cellWhite2;
         private Color _starColor;
         private Color _crossColor;
+        private Color _obstacleColor;
+        private Color _pathColor;
 
         private int Width => PathfindingManager.Instance.Grid.Width;
         private int Height => PathfindingManager.Instance.Grid.Height;
@@ -126,6 +128,8 @@ namespace PathfindingDemo
             ColorUtility.TryParseHtmlString("#ccbfb3", out _cellWhite2);
             ColorUtility.TryParseHtmlString("#bf4040", out _starColor);
             ColorUtility.TryParseHtmlString("#bf40aa", out _crossColor);
+            ColorUtility.TryParseHtmlString("#868679", out _obstacleColor);
+            ColorUtility.TryParseHtmlString("#9540bf", out _pathColor);
         }
 
         private void EnsureDraggables()
@@ -160,8 +164,29 @@ namespace PathfindingDemo
                 {
                     for (int y = 0; y < grid.Height; y++)
                     {
+                        var cell = grid.GetCell(x, y);
+                        var color = cell != null && cell.Type == CellType.Obstacle
+                            ? _obstacleColor
+                            : _cellWhite1;
                         var origin = new Vector2((x + 0.5f) * cellSize, (y + 0.5f) * cellSize);
-                        Draw.Rectangle(origin, Quaternion.identity, size, cellCornerRadius, _cellWhite1);
+                        Draw.Rectangle(origin, Quaternion.identity, size, cellCornerRadius, color);
+                    }
+                }
+
+                // 绘制路径
+                if (_star != null && _cross != null)
+                {
+                    var pathVertices = PathfindingManager.Instance.GetPathVertices(
+                        _star.PosIndex, _cross.PosIndex);
+
+                    if (pathVertices.Count > 1)
+                    {
+                        using (var pathShape = new PolylinePath())
+                        {
+                            foreach (var pt in pathVertices)
+                                pathShape.AddPoint(pt);
+                            Draw.Polyline(pathShape, false, 0.15f, _pathColor);
+                        }
                     }
                 }
 
@@ -202,13 +227,25 @@ namespace PathfindingDemo
 
         public void OnPointerClick(ShapesPointerEvent e)
         {
+            var grid = PathfindingManager.Instance?.Grid;
+            if (grid == null) return;
+
             if (ShapesHitArea.TryGetCell(e.LocalPoint, Vector2.zero, cellSize, Width, Height, cellMargin, out var cell))
             {
-                Debug.Log($"[Grid] clicked cell ({cell.x}, {cell.y})");
+                // 不允许在起点或终点上放置障碍
+                if (_star != null && cell.x == _star.PosIndex.x && cell.y == _star.PosIndex.y) return;
+                if (_cross != null && cell.x == _cross.PosIndex.x && cell.y == _cross.PosIndex.y) return;
+
+                var gridCell = grid.GetCell(cell.x, cell.y);
+                if (gridCell != null)
+                {
+                    gridCell.ToggleType();
+                    Debug.Log($"[Grid] toggled cell ({cell.x}, {cell.y}) → {gridCell.Type}");
+                }
             }
             else
             {
-                Debug.Log($"[Grid] clicked outside the grid");
+                Debug.Log("[Grid] clicked outside the grid");
             }
         }
 

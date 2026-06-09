@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using UnityDemo.Shared;
 using UnityEngine;
 
@@ -105,5 +107,79 @@ namespace PathfindingDemo
             Grid = new Grid(w, h);
             AdjustFieldOfView();
         }
+
+        /// <summary>
+        /// 使用 A* 算法计算从 starIndex 到 crossIndex 的最短路径，返回路径上各格子中心的世界坐标。
+        /// <para>
+        /// 算法参考：https://www.redblobgames.com/pathfinding/a-star/introduction.html
+        /// </para>
+        /// </summary>
+        /// <param name="starIndex">起点格子索引</param>
+        /// <param name="crossIndex">终点格子索引</param>
+        /// <returns>路径顶点列表（含起止点）；无路径时返回空列表</returns>
+        public IReadOnlyList<Vector2> GetPathVertices(Vector2Int starIndex, Vector2Int crossIndex)
+        {
+            var vertices = new List<Vector2>();
+            if (Grid == null) return new ReadOnlyCollection<Vector2>(vertices);
+
+            var startCell = Grid.GetCell(starIndex);
+            var goalCell = Grid.GetCell(crossIndex);
+            if (startCell == null || goalCell == null) return new ReadOnlyCollection<Vector2>(vertices);
+            if (startCell.Type == CellType.Obstacle || goalCell.Type == CellType.Obstacle)
+                return new ReadOnlyCollection<Vector2>(vertices);
+
+            // A* 算法
+            var frontier = new PriorityQueue<Vector2Int, float>();
+            frontier.Enqueue(starIndex, 0f);
+
+            var cameFrom = new Dictionary<Vector2Int, Vector2Int> { [starIndex] = starIndex };
+            var costSoFar = new Dictionary<Vector2Int, float> { [starIndex] = 0f };
+
+            while (frontier.Count > 0)
+            {
+                var current = frontier.Dequeue();
+                if (current == crossIndex) break;
+
+                foreach (var next in Grid.GetNeighbors(current))
+                {
+                    var nextCell = Grid.GetCell(next);
+                    float newCost = costSoFar[current] + nextCell.Cost;
+
+                    if (!costSoFar.TryGetValue(next, out float prevCost) || newCost < prevCost)
+                    {
+                        costSoFar[next] = newCost;
+                        float priority = newCost + Heuristic(crossIndex, next);
+                        frontier.Enqueue(next, priority);
+                        cameFrom[next] = current;
+                    }
+                }
+            }
+
+            // 路径回溯
+            if (!cameFrom.ContainsKey(crossIndex))
+                return new ReadOnlyCollection<Vector2>(vertices);
+
+            var path = new List<Vector2Int>();
+            var step = crossIndex;
+            while (step != starIndex)
+            {
+                path.Add(step);
+                step = cameFrom[step];
+            }
+
+            path.Add(starIndex);
+            path.Reverse();
+
+            // 转换为世界坐标（格子中心）
+            var cellSize = pathfindingDrawer != null ? pathfindingDrawer.cellSize : 1f;
+            foreach (var idx in path)
+                vertices.Add(new Vector2((idx.x + 0.5f) * cellSize, (idx.y + 0.5f) * cellSize));
+
+            return new ReadOnlyCollection<Vector2>(vertices);
+        }
+
+        /// <summary>曼哈顿距离启发函数（四方向网格）。</summary>
+        private static float Heuristic(Vector2Int a, Vector2Int b)
+            => Mathf.Abs(a.x - b.x) + Mathf.Abs(a.y - b.y);
     }
 }

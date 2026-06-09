@@ -14,7 +14,7 @@ namespace PathfindingDemo
         public int X { get; private set; }
         public int Y { get; private set; }
 
-        private int _cost;
+        private int _cost = 1;
 
         public int Cost
         {
@@ -27,6 +27,11 @@ namespace PathfindingDemo
             X = x;
             Y = y;
             Type = type;
+        }
+
+        public void ToggleType()
+        {
+            Type = Type == CellType.Obstacle ? CellType.Normal : CellType.Obstacle;
         }
     }
 }
