@@ -49,8 +49,9 @@ namespace BricksBreakerDemo
 
         private void Update()
         {
-            if (_paddle == null) return;
-            _paddle.SetMoveInput(ReadHorizontalInput());
+            if (_paddle == null || Camera == null) return;
+            _paddle.SetTargetX(ReadMouseWorldX());
+            _paddle.SetBallOffsetInput(ReadHorizontalInput()); // 方向键改用途：调节球位
             if (ReadSpacePressed())
                 _paddle.LaunchBall();
         }
@@ -85,6 +86,25 @@ namespace BricksBreakerDemo
             return Input.GetKeyDown(KeyCode.Space);
 #else
             return false;
+#endif
+        }
+
+        private float ReadMouseWorldX()
+        {
+            Vector3 screen = ReadMousePosition();
+            screen.z = -Camera.transform.position.z; // 投影到 z=0 游戏平面
+            return Camera.ScreenToWorldPoint(screen).x;
+        }
+
+        private Vector2 ReadMousePosition()
+        {
+#if ENABLE_INPUT_SYSTEM
+            if (Mouse.current != null) return Mouse.current.position.ReadValue();
+#endif
+#if ENABLE_LEGACY_INPUT_MANAGER && !ENABLE_INPUT_SYSTEM
+            return Input.mousePosition;
+#else
+            return Vector2.zero;
 #endif
         }
 
