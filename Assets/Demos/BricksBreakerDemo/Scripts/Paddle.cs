@@ -60,8 +60,9 @@ namespace BricksBreakerDemo
             SpawnBall();
         }
 
-        private void SpawnBall()
+        public void SpawnBall()
         {
+            if (ballPrefab == null) return;
             _ball = Instantiate(ballPrefab, _rb.position, Quaternion.identity);
             _ballRb = _ball.GetComponent<Rigidbody2D>();
             var ballCollider = _ball.GetComponent<Collider2D>();
@@ -79,6 +80,13 @@ namespace BricksBreakerDemo
         {
             if (_ball == null || _ball.IsLaunched) return;
             _ball.Launch(ComputeDirection(_ball.transform.position));
+        }
+
+        // B 键：挡板上已有未发射球则不生成；否则生成新的待发射球
+        public void RequestExtraBall()
+        {
+            if (_ball != null && !_ball.IsLaunched) return;
+            SpawnBall();
         }
 
         // ===== 物理 =====

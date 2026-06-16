@@ -13,6 +13,7 @@ namespace BricksBreakerDemo
         public Camera Camera { get; private set; }
 
         private Paddle _paddle;
+        private Brick[] _bricks = System.Array.Empty<Brick>();
 
         protected override void Awake()
         {
@@ -45,6 +46,7 @@ namespace BricksBreakerDemo
         private void AcquireLevelReferences()
         {
             _paddle = FindFirstObjectByType<Paddle>();
+            _bricks = FindObjectsByType<Brick>(FindObjectsSortMode.None);
         }
 
         private void Update()
@@ -54,6 +56,26 @@ namespace BricksBreakerDemo
             _paddle.SetBallOffsetInput(ReadHorizontalInput()); // 方向键改用途：调节球位
             if (ReadSpacePressed())
                 _paddle.LaunchBall();
+            if (ReadRPressed())
+                ResetGame();
+            if (ReadBPressed())
+                _paddle.RequestExtraBall();
+        }
+
+        // 重置游戏状态：重激活所有砖块 + 销毁所有球 + 生成新球
+        private void ResetGame()
+        {
+            foreach (var brick in _bricks)
+            {
+                if (brick != null) brick.gameObject.SetActive(true);
+            }
+
+            foreach (var ball in FindObjectsByType<Ball>(FindObjectsSortMode.None))
+            {
+                Destroy(ball.gameObject);
+            }
+
+            _paddle.SpawnBall();
         }
 
         #region 输入读取
@@ -84,6 +106,32 @@ namespace BricksBreakerDemo
 #endif
 #if ENABLE_LEGACY_INPUT_MANAGER && !ENABLE_INPUT_SYSTEM
             return Input.GetKeyDown(KeyCode.Space);
+#else
+            return false;
+#endif
+        }
+
+        private bool ReadRPressed()
+        {
+#if ENABLE_INPUT_SYSTEM
+            if (Keyboard.current != null)
+                return Keyboard.current.rKey.wasPressedThisFrame;
+#endif
+#if ENABLE_LEGACY_INPUT_MANAGER && !ENABLE_INPUT_SYSTEM
+            return Input.GetKeyDown(KeyCode.R);
+#else
+            return false;
+#endif
+        }
+
+        private bool ReadBPressed()
+        {
+#if ENABLE_INPUT_SYSTEM
+            if (Keyboard.current != null)
+                return Keyboard.current.bKey.wasPressedThisFrame;
+#endif
+#if ENABLE_LEGACY_INPUT_MANAGER && !ENABLE_INPUT_SYSTEM
+            return Input.GetKeyDown(KeyCode.B);
 #else
             return false;
 #endif
