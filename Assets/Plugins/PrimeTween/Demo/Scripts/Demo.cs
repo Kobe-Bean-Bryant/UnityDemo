@@ -2,6 +2,7 @@
 using PrimeTween;
 using UnityEngine.UI;
 #endif
+using System;
 using UnityEngine;
 
 namespace PrimeTweenDemo {
@@ -15,7 +16,7 @@ namespace PrimeTweenDemo {
         [SerializeField] Animatable[] animatables;
         [SerializeField] Wheels wheels;
         bool isAnimatingWithCoroutineOrAsync;
-        public Sequence animateAllSequence;
+        [NonSerialized] public Sequence animateAllSequence;
 
         void Awake() {
             PrimeTweenConfig.SetTweensCapacity(100);
