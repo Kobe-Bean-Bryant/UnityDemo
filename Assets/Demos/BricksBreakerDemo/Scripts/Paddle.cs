@@ -1,3 +1,5 @@
+using Cysharp.Threading.Tasks;
+using System.Threading;
 using UnityEngine;
 
 namespace BricksBreakerDemo
@@ -18,9 +20,19 @@ namespace BricksBreakerDemo
         [SerializeField]
         private float stretchDivisor = 3f; // 越小越夸张，Inspector 微调
         [SerializeField]
-        private float maxStretch = 2f; // 拉伸上限，避免拉得太细
+        private float maxStretch = 2f; // 拉伸上限
         [SerializeField]
         private Transform _visual; // 视觉子物体，Inspector 拖入
+
+        [Header("下落入场动画")]
+        [SerializeField]
+        private float fallHeight = 8f;
+        [SerializeField]
+        private float fallDuration = 0.7f;
+        [SerializeField]
+        private float rotationRange = 45f;
+        [SerializeField]
+        private float startScale = 0.2f;
 
         [SerializeField]
         private Ball ballPrefab;
@@ -37,6 +49,9 @@ namespace BricksBreakerDemo
         private float _targetX; // 鼠标目标 X
         private float _ballOffsetInput; // 方向键输入 (-1/0/+1)
         private float _ballOffset; // 球相对挡板中心的 X 偏移
+
+        private bool _isAnimating; // 下落期间为 true，禁用拉伸避免冲突
+        private CancellationTokenSource _cts;
 
         private void Awake()
         {
@@ -57,9 +72,10 @@ namespace BricksBreakerDemo
                 return;
             }
 
-            SpawnBall();
+            PlaySpawnAnimation(); // 下落动画 → 落地后才生成球（避免下落期间球穿帮）
         }
 
+        // 生成球并吸附到挡板顶部（立即定位，避免 1 帧跳动）
         public void SpawnBall()
         {
             if (ballPrefab == null) return;
@@ -68,6 +84,61 @@ namespace BricksBreakerDemo
             var ballCollider = _ball.GetComponent<Collider2D>();
             _ballRadius = ballCollider != null ? ballCollider.bounds.extents.y : 0f;
             _ballOffset = 0f;
+            _ballRb.position = new Vector2(_rb.position.x, _collider.bounds.max.y + _ballRadius);
+        }
+
+        // ===== 下落入场（由 Start 和 GameManager.ResetGame 调用）=====
+
+        public void PlaySpawnAnimation()
+        {
+            _cts?.Cancel();
+            _cts?.Dispose();
+            _cts = new CancellationTokenSource();
+            FallThenSpawnAsync(_cts.Token).Forget();
+        }
+
+        // 先 await 下落完成，再生成球（球在下落期间不存在 → 无穿帮）
+        private async UniTaskVoid FallThenSpawnAsync(CancellationToken ct)
+        {
+            await PlayFallAsync(ct);
+            SpawnBall();
+        }
+
+        // 下落入场：Y 位移 + 旋转归正 + 缩放归位，三属性共用同一缓动
+        private async UniTask PlayFallAsync(CancellationToken ct)
+        {
+            if (_visual == null) return;
+            _isAnimating = true; // 下落期间禁用拉伸
+            try
+            {
+                Vector3 restPos = Vector3.zero;
+                Vector3 startPos = restPos + Vector3.up * fallHeight;
+                float startRotZ = Random.Range(-rotationRange, rotationRange);
+                Vector3 startScaleVec = Vector3.one * startScale;
+
+                _visual.localPosition = startPos;
+                _visual.localRotation = Quaternion.Euler(0f, 0f, startRotZ);
+                _visual.localScale = startScaleVec;
+
+                float elapsed = 0f; // 挡板单个物体，不加随机 stagger
+                while (elapsed < fallDuration)
+                {
+                    elapsed += Time.deltaTime;
+                    float k = EaseOutBack(Mathf.Clamp01(elapsed / fallDuration));
+                    _visual.localPosition = Vector3.LerpUnclamped(startPos, restPos, k);
+                    _visual.localRotation = Quaternion.Euler(0f, 0f, Mathf.LerpUnclamped(startRotZ, 0f, k));
+                    _visual.localScale = Vector3.LerpUnclamped(startScaleVec, Vector3.one, k);
+                    await UniTask.Yield(ct);
+                }
+
+                _visual.localPosition = restPos;
+                _visual.localRotation = Quaternion.identity;
+                _visual.localScale = Vector3.one;
+            }
+            finally
+            {
+                _isAnimating = false; // 无论完成还是取消，都恢复拉伸
+            }
         }
 
         // ===== 由 GameManager 调用 =====
@@ -85,6 +156,7 @@ namespace BricksBreakerDemo
         // B 键：挡板上已有未发射球则不生成；否则生成新的待发射球
         public void RequestExtraBall()
         {
+            if (_isAnimating) return; // 下落期间禁止，避免幽灵球
             if (_ball != null && !_ball.IsLaunched) return;
             SpawnBall();
         }
@@ -95,8 +167,8 @@ namespace BricksBreakerDemo
         {
             float clampedX = ClampX(_targetX);
 
-            // 拉伸挤压：只缩放视觉子物体 _visual，父物体 Collider 不受影响
-            if (_visual != null)
+            // 拉伸挤压：只缩放视觉子物体 _visual；下落期间禁用避免和入场动画冲突
+            if (_visual != null && !_isAnimating)
             {
                 float delta = Mathf.Abs(clampedX - _rb.position.x);
                 float scaleX = Mathf.Clamp(1f + delta / stretchDivisor, 1f, maxStretch);
@@ -133,7 +205,6 @@ namespace BricksBreakerDemo
             float offset = Mathf.Clamp((ballPos.x - paddlePos.x) / _paddleHalfWidth, -1f, 1f);
             float angleRad = offset * maxBounceAngle * Mathf.Deg2Rad;
             float ySign = Mathf.Sign(ballPos.y - paddlePos.y);
-            // 基准方向变了，sin 和 cos 的角色就互换。
             return new Vector2(Mathf.Sin(angleRad), Mathf.Cos(angleRad) * ySign);
         }
 
@@ -142,6 +213,20 @@ namespace BricksBreakerDemo
             float min = -_screenHalfWidth + _paddleHalfWidth;
             float max = _screenHalfWidth - _paddleHalfWidth;
             return Mathf.Clamp(x, min, max);
+        }
+
+        private void OnDestroy()
+        {
+            _cts?.Cancel();
+            _cts?.Dispose();
+        }
+
+        // EaseOutBack：过冲后回弹（落地时的弹性手感）
+        private static float EaseOutBack(float k)
+        {
+            const float c1 = 1.70158f;
+            const float c3 = c1 + 1f;
+            return 1f + c3 * Mathf.Pow(k - 1f, 3f) + c1 * Mathf.Pow(k - 1f, 2f);
         }
     }
 }

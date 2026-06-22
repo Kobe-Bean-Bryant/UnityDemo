@@ -62,12 +62,14 @@ namespace BricksBreakerDemo
                 _paddle.RequestExtraBall();
         }
 
-        // 重置游戏状态：重激活所有砖块 + 销毁所有球 + 生成新球
+        // 重置游戏状态：重激活砖块并播放下落 + 销毁所有球 + 挡板下落后生成新球
         private void ResetGame()
         {
             foreach (var brick in _bricks)
             {
-                if (brick != null) brick.gameObject.SetActive(true);
+                if (brick == null) continue;
+                brick.gameObject.SetActive(true);
+                brick.PlaySpawnAnimation();
             }
 
             foreach (var ball in FindObjectsByType<Ball>(FindObjectsSortMode.None))
@@ -75,7 +77,7 @@ namespace BricksBreakerDemo
                 Destroy(ball.gameObject);
             }
 
-            _paddle.SpawnBall();
+            _paddle.PlaySpawnAnimation();
         }
 
         #region 输入读取
