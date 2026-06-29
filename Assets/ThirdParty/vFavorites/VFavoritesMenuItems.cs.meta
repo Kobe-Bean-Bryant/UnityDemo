@@ -13,6 +13,6 @@ AssetOrigin:
   serializedVersion: 1
   productId: 263643
   packageName: vFavorites 2
-  packageVersion: 2.0.14
-  assetPath: Assets/vFavorites/VFavoritesMenuItems.cs
-  uploadId: 874224
+  packageVersion: 2.0.16
+  assetPath: Assets/ThirdParty/vFavorites/VFavoritesMenuItems.cs
+  uploadId: 942074

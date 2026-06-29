@@ -602,7 +602,7 @@ namespace VTabs
                     if (tabInfo.folderGuid.IsNullOrEmpty()) return;
 
 
-                    var iid = AssetDatabase.LoadAssetAtPath<Object>(AssetDatabase.GUIDToAssetPath(tabInfo.folderGuid)).GetInstanceID();
+                    var iid = AssetDatabase.LoadAssetAtPath<Object>(AssetDatabase.GUIDToAssetPath(tabInfo.folderGuid)).GetObjectID();
 
 #if UNITY_6000_3_OR_NEWER
                     window.GetFieldValue("m_ListAreaState").SetFieldValue("m_SelectedInstanceIDs", new List<EntityId> { (EntityId)iid });
@@ -627,7 +627,7 @@ namespace VTabs
 
 
                     var folderPath = tabInfo.folderGuid.ToPath();
-                    var folderIid = AssetDatabase.LoadAssetAtPath<Object>(folderPath).GetInstanceID();
+                    var folderIid = AssetDatabase.LoadAssetAtPath<Object>(folderPath).GetObjectID();
 
 #if UNITY_6000_3_OR_NEWER
                     data.SetMemberValue("m_rootInstanceID", (EntityId)folderIid);

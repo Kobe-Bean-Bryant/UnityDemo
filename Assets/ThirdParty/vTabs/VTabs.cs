@@ -18,6 +18,18 @@ using static VTabs.Libs.VGUI;
 // using static VTools.VDebug;
 
 
+#if UNITY_6000_3_OR_NEWER
+using ObjectID = UnityEngine.EntityId;
+#else
+using ObjectID = System.Int32;
+#endif
+
+
+
+
+
+
+
 
 namespace VTabs
 {
@@ -446,7 +458,7 @@ namespace VTabs
             }
             void getAdjustedIcon()
             {
-                if (adjustedObjectIconsBySourceIid.TryGetValue(sourceIcon.GetInstanceID(), out adjustedIcon)) return;
+                if (adjustedObjectIconsBySourceIid.TryGetValue(sourceIcon.GetObjectID(), out adjustedIcon)) return;
 
 
                 adjustedIcon = new Texture2D(sourceIcon.width, sourceIcon.height, sourceIcon.format, sourceIcon.mipmapCount, false);
@@ -456,7 +468,7 @@ namespace VTabs
                 Graphics.CopyTexture(sourceIcon, adjustedIcon);
 
 
-                adjustedObjectIconsBySourceIid[sourceIcon.GetInstanceID()] = adjustedIcon;
+                adjustedObjectIconsBySourceIid[sourceIcon.GetObjectID()] = adjustedIcon;
 
             }
 
@@ -504,7 +516,7 @@ namespace VTabs
         }
 
 
-        static Dictionary<int, Texture2D> adjustedObjectIconsBySourceIid = new Dictionary<int, Texture2D>();
+        static Dictionary<ObjectID, Texture2D> adjustedObjectIconsBySourceIid = new Dictionary<ObjectID, Texture2D>();
 
 
 
@@ -560,7 +572,7 @@ namespace VTabs
                     if (m_rootInstanceID != 0) return;
 
                     var folderPath = browser.GetLockedFolderPath_oneColumn();
-                    var folderIid = AssetDatabase.LoadAssetAtPath<Object>(folderPath).GetInstanceID();
+                    var folderIid = AssetDatabase.LoadAssetAtPath<Object>(folderPath).GetObjectID();
 
 #if UNITY_6000_3_OR_NEWER
                     data.SetMemberValue("m_rootInstanceID", (EntityId)folderIid);
@@ -576,7 +588,7 @@ namespace VTabs
                     if (m_rootInstanceID == 0) return;
 
                     var folderIid = m_rootInstanceID;
-                    var folderPath = _EditorUtility_InstanceIDToObject(folderIid).GetPath();
+                    var folderPath = _EditorUtility_ObjectIDToObject(folderIid).GetPath();
 
                     browser.SetLockedFolderPath_oneColumn(folderPath);
 
@@ -646,7 +658,7 @@ namespace VTabs
                         if (delayedFolderGuid == curFolderGuid) return;
 
 
-                        var folderIid = AssetDatabase.LoadAssetAtPath<Object>(AssetDatabase.GUIDToAssetPath(delayedFolderGuid)).GetInstanceID();
+                        var folderIid = AssetDatabase.LoadAssetAtPath<Object>(AssetDatabase.GUIDToAssetPath(delayedFolderGuid)).GetObjectID();
 
 #if UNITY_6000_3_OR_NEWER
                         browser.InvokeMethod("SetFolderSelection", new[] { (EntityId)folderIid }, false);
@@ -1109,7 +1121,8 @@ namespace VTabs
         }
 
         static void ProjectWindowItemOnGUI(string _, Rect __) => OnSomeGUI();
-        static void HierarchyWindowItemOnGUI(int _, Rect __) => OnSomeGUI();
+        static void HierarchyWindowItemOnGUI(ObjectID _, Rect __) => OnSomeGUI();
+        static void HierarchyWindowItemOnGUI_6000_3(int _, Rect __) => OnSomeGUI();
 
         static Action toCallInGUI;
 
@@ -1487,8 +1500,16 @@ namespace VTabs
             EditorApplication.projectWindowItemOnGUI -= ProjectWindowItemOnGUI;
             EditorApplication.projectWindowItemOnGUI += ProjectWindowItemOnGUI;
 
+#if UNITY_6000_4_OR_NEWER
+            EditorApplication.hierarchyWindowItemByEntityIdOnGUI -= HierarchyWindowItemOnGUI;
+            EditorApplication.hierarchyWindowItemByEntityIdOnGUI += HierarchyWindowItemOnGUI;
+#elif UNITY_6000_3
+            EditorApplication.hierarchyWindowItemOnGUI -= HierarchyWindowItemOnGUI_6000_3;
+            EditorApplication.hierarchyWindowItemOnGUI += HierarchyWindowItemOnGUI_6000_3;
+#else
             EditorApplication.hierarchyWindowItemOnGUI -= HierarchyWindowItemOnGUI;
             EditorApplication.hierarchyWindowItemOnGUI += HierarchyWindowItemOnGUI;
+#endif
 
             EditorApplication.delayCall -= DelayCallLoop;
             EditorApplication.delayCall += DelayCallLoop;
@@ -1564,7 +1585,7 @@ namespace VTabs
 
 
 
-        const string version = "2.1.6";
+        const string version = "2.1.7";
 
     }
 }
