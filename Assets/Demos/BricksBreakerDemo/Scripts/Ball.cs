@@ -153,6 +153,13 @@ namespace BricksBreakerDemo
             _pop += popAmount;
             _wobble = wobbleKick;
             _wobbleVel = wobbleKickVelocity; // 速度踢（juicy: 2.5）
+
+            // juicy G0: PARTICLE_BALL_COLLISION — 5 个橙色冲击粒子从球位置炸开
+            float baseAngleDeg = -Mathf.Atan2(_rb.linearVelocity.x, _rb.linearVelocity.y) * Mathf.Rad2Deg;
+            Brick.SpawnBurst(transform.position, 5, 90f, baseAngleDeg,
+                _currentSpeed * 0.25f, 0.5f,
+                new Color(0.922f, 0.631f, 0.498f), // juicy COLOR_SPARK 0xeba17f
+                0.3f, 0.6f, 1.5f);
         }
     }
 }

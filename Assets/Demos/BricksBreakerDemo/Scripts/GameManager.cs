@@ -62,9 +62,11 @@ namespace BricksBreakerDemo
                 _paddle.RequestExtraBall();
         }
 
-        // 重置游戏状态：重激活砖块并播放下落 + 销毁所有球 + 挡板下落后生成新球
+        // 重置游戏状态：清残留碎片 + 重激活砖块并下落 + 销毁所有球 + 挡板下落后生成新球
         private void ResetGame()
         {
+            Brick.ClearFragments();
+
             foreach (var brick in _bricks)
             {
                 if (brick == null) continue;
@@ -235,6 +237,7 @@ namespace BricksBreakerDemo
 
         // 生成 1×1 白色方块精灵（缓存复用），供墙体 SpriteRenderer 使用
         private static Sprite _whiteSprite;
+
         private static Sprite GetWhiteSprite()
         {
             if (_whiteSprite != null && _whiteSprite.texture != null) return _whiteSprite;
