@@ -26,7 +26,7 @@ namespace FlyingWormConsole3
 			EditorApplication.delayCall += LoadCorrectDLL;
 		}
 
-		static string[] ValidFolders = new string[] { "2021_3_Plus", "6000_3_Plus" };
+		static string[] ValidFolders = new string[] { "2021_3_Plus", "2022_3_Plus", "6000_3_Plus", "6000_5_Plus" };
 
 		static void LoadCorrectDLL()
 		{
@@ -63,8 +63,12 @@ namespace FlyingWormConsole3
 
 			string targetFolder = null;
 
-	#if UNITY_6000_3_OR_NEWER
+	#if UNITY_6000_5_OR_NEWER
+		targetFolder = "6000_5_Plus";
+#elif UNITY_6000_3_OR_NEWER
 		targetFolder = "6000_3_Plus";
+#elif UNITY_2022_3_OR_NEWER
+		targetFolder = "2022_3_Plus";
 #else
 		targetFolder = "2021_3_Plus";
 #endif

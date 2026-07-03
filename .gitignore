@@ -89,6 +89,11 @@ mono_crash.*
 # Auto-generated scenes by tests
 /[Aa]ssets/[Ii]nit[Tt]est[Ss]cene*.unity*
 
+# Unity MCP (CoplayDev/unity-mcp) 截图工具产物
+# 默认输出路径 Assets/Screenshots；如改用根目录 Captures 也一并忽略
+/[Aa]ssets/[Ss]creenshots/
+/[Cc]aptures/
+
 # 9) 通用临时文件
 *.log
 *.tmp
