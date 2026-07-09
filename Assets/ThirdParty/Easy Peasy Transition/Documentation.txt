@@ -1,0 +1,77 @@
+
+* Includes 3 different demo scenes.
+* Supports all Render Pipelines
+
+NOTE ON MATERIALS: 
+If everything appears pink in your scene, you can simply upgrade the materials 
+to match your current active Render Pipeline. The materials only carry basic 
+color data, so upgrading them will not break any functionality.
+
+A. LoadScene      : Plays the transition and asynchronously loads a new scene.
+B. PlayTransition : Plays the transition animation without changing the scene.
+
+Both functions accept the following parameters:
+- TransitionType type      : The visual effect to use (1 of 30 available types).
+- float? enterDuration     : Duration of the screen closing phase (Optional).
+- float? exitDuration      : Duration of the screen opening phase (Optional).
+- Color? customColor       : Transition color (Optional, defaults to black).
+- UnityAction onHalfway    : Callback triggered when the screen is fully closed (Optional).
+- UnityAction onCompleted  : Callback triggered when the transition is fully finished (Optional).
+
+EXAMPLE 1: Loading a Scene by Name
+EasyPeasyTransition.Instance.LoadScene(
+    "GameScene", 
+    EasyPeasyTransition.TransitionType.Jaws
+);
+
+
+EXAMPLE 2: Loading a Scene by Build Index with Custom Duration
+EasyPeasyTransition.Instance.LoadScene(
+    1, 
+    EasyPeasyTransition.TransitionType.PixelDissolve, 
+    1.5f
+);
+
+
+EXAMPLE 3: Setting Separate Enter and Exit Durations with Custom Color
+EasyPeasyTransition.Instance.LoadScene(
+    "MainMenu", 
+    EasyPeasyTransition.TransitionType.BouncingBars, 
+    0.2f,  // Enter duration (closes fast)
+    1.2f,  // Exit duration (opens slowly)
+    Color.black
+);
+
+
+EXAMPLE 4: Using Callbacks (Events) During Scene Load
+EasyPeasyTransition.Instance.LoadScene(
+    "GameScene", 
+    EasyPeasyTransition.TransitionType.SpiralGrid, 
+    0.5f, 
+    0.5f, 
+    Color.black, 
+    () => 
+    {
+        // Executed when the screen is completely covered.
+        // Safe to reset player data or play a specific sound.
+    }, 
+    () => 
+    {
+        // Executed when the new scene is active and the opening animation ends.
+    }
+);
+
+
+EXAMPLE 5: Playing an UI Animation Without Changing Scenes
+EasyPeasyTransition.Instance.PlayTransition(
+    EasyPeasyTransition.TransitionType.ClockWipe, 
+    0.6f, 
+    0.4f, 
+    Color.black, 
+    () => 
+    {
+        // Executed halfway through. Swap UI panels or teleport objects here.
+        oldPanel.SetActive(false);
+        newPanel.SetActive(true);
+    }
+);

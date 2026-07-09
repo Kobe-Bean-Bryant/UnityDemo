@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: c1c192b9fbcb5084289b101802ac60fd
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 112000000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 379540
+  packageName: Easy Peasy Transition
+  packageVersion: 1.0
+  assetPath: Assets/Easy Peasy Transition/Demo/DemoLightingData/LightingData.asset
+  uploadId: 915560
