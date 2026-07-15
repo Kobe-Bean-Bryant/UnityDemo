@@ -6,8 +6,28 @@ namespace EasyPeasyTransition
     using UnityEngine.UI;
     using UnityEngine.Events;
 
+    /// <summary>
+    /// 全屏过渡效果管理器（持久化单例 + Overlay Canvas）。
+    /// 设计要点（中文学习向）：
+    /// 1) 持久化单例：Awake 中调用 DontDestroyOnLoad，整个游戏生命周期只保留一个实例；
+    ///    其 Overlay Canvas 的 sortingOrder=9999 保证过渡画面始终盖在普通 UI 之上。
+    /// 2) 一次性预建/缓存：所有过渡类型用到的几何（整屏面板 / 切片 / 网格 / 百叶窗 …）
+    ///    都在 InitializeUI 中一次性创建并缓存为字段，运行期只做"激活 + 位移/缩放/旋转"，
+    ///    避免每次过渡都 Instantiate/AddComponent，性能与 GC 都更友好。
+    /// 3) 按类型选容器：每种 TransitionType 对应一个独立 Container（如 slicesContainer、
+    ///    gridContainer …）。EnableContainerForType 只激活需要的那一个，
+    ///    DisableAllContainers 在开始/结束时统一隐藏全部，互不干扰。
+    /// 4) 单协程驱动：TransitionSequence 是唯一的状态机协程，固定三段式推进——
+    ///    "覆盖(cover) → 中点回调/可选场景加载 → 揭开(uncover)"。
+    /// 5) 输入阻断 + 并发保护：过渡期间把 fullScreenImage.raycastTarget 置 true 吃掉点击，
+    ///    阻止玩家点到下层 UI；isTransitioning 标志位防止过渡重入。
+    /// 6) ApplyAnimation：把归一化进度 t∈[0,1] 翻译成具体的 Transform 变化
+    ///    （anchoredPosition / localScale / localRotation / Image.fillAmount），
+    ///    是所有视觉效果的"解释器"。
+    /// </summary>
     public class EasyPeasyTransition : MonoBehaviour
     {
+        // ===== 过渡类型枚举：每个值对应"一种几何容器 + 一个 ApplyAnimation 分支" =====
         public enum TransitionType
         {
             Fade,
@@ -42,7 +62,10 @@ namespace EasyPeasyTransition
             FoldingColumns
         }
 
+        // ===== 单例与生命周期：懒加载 + 跨场景持久化，任意时刻只存在一个实例 =====
         private static EasyPeasyTransition instance;
+
+        // 公共入口（属性）：首次访问时若场景里没有实例，则自动新建一个隐藏 GameObject 并挂载本脚本。
         public static EasyPeasyTransition Instance
         {
             get
@@ -53,7 +76,7 @@ namespace EasyPeasyTransition
                     if (instance == null)
                     {
                         GameObject go = new GameObject("EasyPeasyTransition");
-                        go.hideFlags = HideFlags.HideInHierarchy;
+                        // go.hideFlags = HideFlags.HideInHierarchy;
                         instance = go.AddComponent<EasyPeasyTransition>();
                     }
                 }
@@ -61,6 +84,8 @@ namespace EasyPeasyTransition
             }
         }
 
+        // ===== 序列化设置 + 运行期缓存的 UI 引用（一次性预建后复用，避免运行期查找/创建）=====
+        // 下面先两项是 Inspector 可调参数；其后全部是 InitializeUI 预建并缓存的 Transform/Image。
         [SerializeField] private Color transitionColor = new Color(0.05f, 0.05f, 0.05f, 1f);
         [SerializeField] private float transitionDuration = 0.5f;
 
@@ -140,8 +165,10 @@ namespace EasyPeasyTransition
         private RectTransform foldingContainer;
         private RectTransform[] foldingColumns;
 
+        // 并发保护标志：true 表示有过渡正在播放；各公共 API 在入口处检查它以拒绝重入。
         private bool isTransitioning = false;
 
+        // ===== 生命周期：Awake 绑定单例 + DontDestroyOnLoad 持久化 + 调用 InitializeUI 预建全部 UI =====
         private void Awake()
         {
             if (instance == null)
@@ -156,8 +183,11 @@ namespace EasyPeasyTransition
             }
         }
 
+        // ===== UI 预建：仅 Awake 调用一次。搭建 Overlay Canvas，并按效果分组预生成全部几何 =====
+        // 每个效果块都遵循同一套路：建 Container → SetStretch 铺满 → 循环建子 Image → 设锚点/偏移。
         private void InitializeUI()
         {
+            // —— 通用画布：ScreenSpaceOverlay + sortingOrder 9999 + 1920x1080 自适应缩放 + 射线检测器 ——
             transitionCanvas = GetComponent<Canvas>();
             if (transitionCanvas == null)
             {
@@ -180,17 +210,21 @@ namespace EasyPeasyTransition
                 gameObject.AddComponent<GraphicRaycaster>();
             }
 
+            // 根容器：所有过渡几何的父节点，铺满整屏
             mainContainer = CreateRect(transform, "MainContainer");
             SetStretch(mainContainer);
 
+            // —— 单整屏面板：Fade / SlideLeft/Right/Top/Bottom / ZoomInOut 共用这一张全屏 Image ——
             GameObject fsObj = new GameObject("FullScreenPanel");
             fullScreenPanel = fsObj.AddComponent<RectTransform>();
             fullScreenPanel.SetParent(mainContainer, false);
             SetStretch(fullScreenPanel);
             fullScreenImage = fsObj.AddComponent<Image>();
             fullScreenImage.color = transitionColor;
-            fullScreenImage.raycastTarget = false;
+            fullScreenImage.raycastTarget = false; // 默认不拦射线；仅过渡进行中临时打开以挡点击
 
+            // —— 垂直切片组：VerticalSlices / AlternatingSlices 共用这 5 条竖条 ——
+            // 容器整体放大 1.5 倍 + 倾斜 10°；配合下方"超出屏幕"的锚点范围，移动时不会露空。
             slicesContainer = CreateRect(mainContainer, "SlicesContainer");
             SetStretch(slicesContainer);
             slicesContainer.localScale = Vector3.one * 1.5f;
@@ -204,12 +238,14 @@ namespace EasyPeasyTransition
                 Image img = go.AddComponent<Image>();
                 img.color = transitionColor;
                 img.raycastTarget = false;
+                // X 方向按 0.2 步长均分 5 列；Y 方向取 [-1,2] 比屏幕高一倍，旋转/平移时仍能完全覆盖画面
                 slices[i].anchorMin = new Vector2(i * 0.2f, -1f);
                 slices[i].anchorMax = new Vector2((i + 1) * 0.2f, 2f);
                 slices[i].offsetMin = Vector2.zero;
                 slices[i].offsetMax = Vector2.zero;
             }
 
+            // —— 双面板（上下颌）：Jaws。上颌占上半屏、下颌占下半屏，分别向上/下滑开 ——
             jawsContainer = CreateRect(mainContainer, "JawsContainer");
             SetStretch(jawsContainer);
 
@@ -219,7 +255,7 @@ namespace EasyPeasyTransition
             Image topImg = topGo.AddComponent<Image>();
             topImg.color = transitionColor;
             topImg.raycastTarget = false;
-            jawTop.anchorMin = new Vector2(0, 0.5f);
+            jawTop.anchorMin = new Vector2(0, 0.5f); // 锚点上沿在屏幕中线：上颌占据 [0.5, 1] 的上半屏
             jawTop.anchorMax = new Vector2(1, 1);
             jawTop.offsetMin = Vector2.zero;
             jawTop.offsetMax = Vector2.zero;
@@ -230,11 +266,12 @@ namespace EasyPeasyTransition
             Image botImg = botGo.AddComponent<Image>();
             botImg.color = transitionColor;
             botImg.raycastTarget = false;
-            jawBottom.anchorMin = new Vector2(0, 0);
+            jawBottom.anchorMin = new Vector2(0, 0); // 下颌占据 [0, 0.5] 的下半屏，与上颌在中线对接
             jawBottom.anchorMax = new Vector2(1, 0.5f);
             jawBottom.offsetMin = Vector2.zero;
             jawBottom.offsetMax = Vector2.zero;
 
+            // —— 中心菱形：DiamondSpin。从屏幕中心放大并旋转 180° ——
             diamondContainer = CreateRect(mainContainer, "DiamondContainer");
             SetStretch(diamondContainer);
             GameObject diaGo = new GameObject("Diamond");
@@ -243,15 +280,16 @@ namespace EasyPeasyTransition
             Image diaImg = diaGo.AddComponent<Image>();
             diaImg.color = transitionColor;
             diaImg.raycastTarget = false;
-            diamond.anchorMin = new Vector2(0.5f, 0.5f);
+            diamond.anchorMin = new Vector2(0.5f, 0.5f); // 锚点在屏幕正中心
             diamond.anchorMax = new Vector2(0.5f, 0.5f);
-            diamond.sizeDelta = new Vector2(5000f, 5000f);
+            diamond.sizeDelta = new Vector2(5000f, 5000f); // 5000 远超任何分辨率，保证缩放过程中始终覆盖整屏
 
+            // —— 水平百叶窗：HorizontalBlinds。8 条横向条带，靠 Y 轴缩放开合 ——
             blindsContainer = CreateRect(mainContainer, "BlindsContainer");
             SetStretch(blindsContainer);
             int blindsCount = 8;
             blinds = new RectTransform[blindsCount];
-            float step = 1f / blindsCount;
+            float step = 1f / blindsCount; // "等分铺满"套路：每条占屏幕高度的 1/count，第 i 条落在 [i*step, (i+1)*step]
             for (int i = 0; i < blindsCount; i++)
             {
                 GameObject go = new GameObject("Blind_" + i);
@@ -266,6 +304,7 @@ namespace EasyPeasyTransition
                 blinds[i].offsetMax = Vector2.zero;
             }
 
+            // —— 双面板（左右幕布）：TheatreCurtains。左半屏 + 右半屏分别向两侧拉开 ——
             curtainsContainer = CreateRect(mainContainer, "CurtainsContainer");
             SetStretch(curtainsContainer);
 
@@ -275,7 +314,7 @@ namespace EasyPeasyTransition
             Image cLeftImg = cLeftGo.AddComponent<Image>();
             cLeftImg.color = transitionColor;
             cLeftImg.raycastTarget = false;
-            curtainLeft.anchorMin = new Vector2(0, 0);
+            curtainLeft.anchorMin = new Vector2(0, 0);   // 左幕布占 [0, 0.5] 左半屏
             curtainLeft.anchorMax = new Vector2(0.5f, 1);
             curtainLeft.offsetMin = Vector2.zero;
             curtainLeft.offsetMax = Vector2.zero;
@@ -286,16 +325,17 @@ namespace EasyPeasyTransition
             Image cRightImg = cRightGo.AddComponent<Image>();
             cRightImg.color = transitionColor;
             cRightImg.raycastTarget = false;
-            curtainRight.anchorMin = new Vector2(0.5f, 0);
+            curtainRight.anchorMin = new Vector2(0.5f, 0); // 右幕布占 [0.5, 1] 右半屏，与左幕布在中线对接
             curtainRight.anchorMax = new Vector2(1, 1);
             curtainRight.offsetMin = Vector2.zero;
             curtainRight.offsetMax = Vector2.zero;
 
+            // —— 4x4 网格：Checkerboard / SpiralGrid 共用这 16 格，靠逐格缩放显现 ——
             gridContainer = CreateRect(mainContainer, "GridContainer");
             SetStretch(gridContainer);
             int gridSize = 4;
             gridCells = new RectTransform[gridSize * gridSize];
-            float cellSize = 1f / gridSize;
+            float cellSize = 1f / gridSize; // 同样的"等分铺满"套路，二维版：每格占 cellSize×cellSize
             for (int x = 0; x < gridSize; x++)
             {
                 for (int y = 0; y < gridSize; y++)
@@ -314,6 +354,7 @@ namespace EasyPeasyTransition
                 }
             }
 
+            // —— 对角百叶：DiagonalBlinds。容器整体旋转 45° + 放大 2.5 倍，内部仍是水平百叶 ——
             diagonalContainer = CreateRect(mainContainer, "DiagonalContainer");
             SetStretch(diagonalContainer);
             diagonalContainer.localScale = Vector3.one * 2.5f;
@@ -335,6 +376,7 @@ namespace EasyPeasyTransition
                 diagonalBlinds[i].offsetMax = Vector2.zero;
             }
 
+            // —— 垂直百叶窗：VerticalBlinds。10 条竖向条带，靠 X 轴缩放开合 ——
             vBlindsContainer = CreateRect(mainContainer, "VBlindsContainer");
             SetStretch(vBlindsContainer);
             int vBlindsCount = 10;
@@ -354,6 +396,7 @@ namespace EasyPeasyTransition
                 vBlinds[i].offsetMax = Vector2.zero;
             }
 
+            // —— 角落擦除：CornerWipe。锚点在左上角、pivot 也在左上角，从角点放大覆盖整屏 ——
             cornerContainer = CreateRect(mainContainer, "CornerContainer");
             SetStretch(cornerContainer);
             GameObject cornerGo = new GameObject("CornerPanel");
@@ -362,11 +405,13 @@ namespace EasyPeasyTransition
             Image cornerImg = cornerGo.AddComponent<Image>();
             cornerImg.color = transitionColor;
             cornerImg.raycastTarget = false;
-            cornerPanel.anchorMin = new Vector2(0, 1);
+            cornerPanel.anchorMin = new Vector2(0, 1); // 锚定到左上角顶点
             cornerPanel.anchorMax = new Vector2(0, 1);
-            cornerPanel.pivot = new Vector2(0, 1);
+            cornerPanel.pivot = new Vector2(0, 1);     // 缩放/旋转轴心放在左上角，于是从角点向外生长
             cornerPanel.sizeDelta = new Vector2(5000f, 5000f);
 
+            // —— 随机水平条带：RandomHorizontalStrips。10 条横条，每条带一个随机延迟，营造"乱序"擦除 ——
+            // 注意：这里的延迟只是初始值；协程每次播放该类型时还会重新随机一次（见 TransitionSequence）。
             randomStripsContainer = CreateRect(mainContainer, "RandomStripsContainer");
             SetStretch(randomStripsContainer);
             int randomCount = 10;
@@ -385,9 +430,10 @@ namespace EasyPeasyTransition
                 randomStrips[i].anchorMax = new Vector2(1f, (i + 1) * rStep);
                 randomStrips[i].offsetMin = Vector2.zero;
                 randomStrips[i].offsetMax = Vector2.zero;
-                randomStripDelays[i] = Random.Range(0f, 0.3f);
+                randomStripDelays[i] = Random.Range(0f, 0.3f); // 每条各自的入场延迟，ApplyAnimation 里据此错峰
             }
 
+            // —— 拉链擦除：ZipWipe。10 条横条，奇偶索引从相反方向滑入，像拉链咬合 ——
             zipContainer = CreateRect(mainContainer, "ZipContainer");
             SetStretch(zipContainer);
             int zipCount = 10;
@@ -407,6 +453,7 @@ namespace EasyPeasyTransition
                 zipStrips[i].offsetMax = Vector2.zero;
             }
 
+            // —— 多层旋转：SpinningLayers。3 个全屏层从中心放大并各自旋转 ——
             spinLayersContainer = CreateRect(mainContainer, "SpinLayersContainer");
             SetStretch(spinLayersContainer);
             int spinCount = 3;
@@ -424,6 +471,7 @@ namespace EasyPeasyTransition
                 spinLayers[i].sizeDelta = new Vector2(5000f, 5000f);
             }
 
+            // —— 时钟擦除：ClockWipe。用 Image 的 Filled 类型，按 fillAmount 从 0→1 做 Radial360 扇形扫描 ——
             GameObject clockObj = new GameObject("ClockPanel");
             clockPanel = clockObj.AddComponent<RectTransform>();
             clockPanel.SetParent(mainContainer, false);
@@ -431,15 +479,17 @@ namespace EasyPeasyTransition
 
             clockImage = clockObj.AddComponent<Image>();
 
+            // 用纯白纹理生成一个 Sprite 作为填充载体（颜色由 clockImage.color 控制）
             Texture2D whiteTex = Texture2D.whiteTexture;
             clockImage.sprite = Sprite.Create(whiteTex, new Rect(0, 0, whiteTex.width, whiteTex.height), new Vector2(0.5f, 0.5f));
 
             clockImage.type = Image.Type.Filled;
             clockImage.fillMethod = Image.FillMethod.Radial360;
-            clockImage.fillOrigin = 2;
+            clockImage.fillOrigin = 2; // 2 = Top，从顶部开始顺时针扫描
             clockImage.color = transitionColor;
             clockImage.raycastTarget = false;
 
+            // —— 多层滑入：MultiLayerSlide。3 个全屏层错峰滑入，且叠加不同透明度形成层次感 ——
             multiLayersContainer = CreateRect(mainContainer, "MultiLayersContainer");
             SetStretch(multiLayersContainer);
             multiLayers = new RectTransform[3];
@@ -454,6 +504,8 @@ namespace EasyPeasyTransition
                 img.raycastTarget = false;
             }
 
+            // —— 8x8 像素溶解：PixelDissolve。64 个小格各自带随机延迟逐个浮现，呈现"散点溶解"质感 ——
+            // 与 RandomHorizontalStrips 一样，pixelDelays 在每次播放时会被协程重新随机。
             pixelGridContainer = CreateRect(mainContainer, "PixelGridContainer");
             SetStretch(pixelGridContainer);
             int pSize = 8;
@@ -475,10 +527,12 @@ namespace EasyPeasyTransition
                     pixelCells[idx].anchorMax = new Vector2((x + 1) * pStep, (y + 1) * pStep);
                     pixelCells[idx].offsetMin = Vector2.zero;
                     pixelCells[idx].offsetMax = Vector2.zero;
-                    pixelDelays[idx] = Random.Range(0f, 0.5f);
+                    pixelDelays[idx] = Random.Range(0f, 0.5f); // 每格独立延迟，呈现"溶解/散点"质感
                 }
             }
 
+            // —— 四向快门：CameraShutter。左右上下 4 块面板同时向中心合拢/打开 ——
+            // 下面先建 4 个面板，再用 anchor 把它们分别摆到左半/右半/上半/下半屏。
             shutterContainer = CreateRect(mainContainer, "ShutterContainer");
             SetStretch(shutterContainer);
             shutterPanels = new RectTransform[4];
@@ -505,6 +559,7 @@ namespace EasyPeasyTransition
                 shutterPanels[i].offsetMax = Vector2.zero;
             }
 
+            // —— 弹跳竖条：BouncingBars。7 根竖条错峰从下方弹入，用 Overshoot 缓动出回弹感 ——
             bounceContainer = CreateRect(mainContainer, "BounceContainer");
             SetStretch(bounceContainer);
             int bCount = 7;
@@ -524,6 +579,7 @@ namespace EasyPeasyTransition
                 bounceBars[i].offsetMax = Vector2.zero;
             }
 
+            // —— 同心方块：ConcentricSquares。4 个居中方块逐层放大 + 轻微旋转 + 递增透明度 ——
             concentricContainer = CreateRect(mainContainer, "ConcentricContainer");
             SetStretch(concentricContainer);
             int cCount = 4;
@@ -541,6 +597,7 @@ namespace EasyPeasyTransition
                 concentricSquares[i].sizeDelta = new Vector2(5000f, 5000f);
             }
 
+            // —— 十字网格：Crosshatch。前 5 条横向 + 后 5 条竖向，组成"网"状擦除 ——
             crosshatchContainer = CreateRect(mainContainer, "CrosshatchContainer");
             SetStretch(crosshatchContainer);
             int chCount = 10;
@@ -571,6 +628,7 @@ namespace EasyPeasyTransition
                 crosshatchBars[i].offsetMax = Vector2.zero;
             }
 
+            // —— 风车：Pinwheel。4 片"叶子"锚定屏幕中心，按 90° 间隔旋转入场 ——
             pinwheelContainer = CreateRect(mainContainer, "PinwheelContainer");
             SetStretch(pinwheelContainer);
             pinwheelBlades = new RectTransform[4];
@@ -582,12 +640,13 @@ namespace EasyPeasyTransition
                 Image img = go.AddComponent<Image>();
                 img.color = transitionColor;
                 img.raycastTarget = false;
-                pinwheelBlades[i].anchorMin = new Vector2(0.5f, 0.5f);
+                pinwheelBlades[i].anchorMin = new Vector2(0.5f, 0.5f); // 锚定屏幕中心
                 pinwheelBlades[i].anchorMax = new Vector2(0.5f, 0.5f);
                 pinwheelBlades[i].sizeDelta = new Vector2(3000f, 3000f);
-                pinwheelBlades[i].pivot = Vector2.zero;
+                pinwheelBlades[i].pivot = Vector2.zero; // 旋转轴心放在锚点(屏幕中心)位置，于是绕中心旋转
             }
 
+            // —— 多米诺：Dominoes。10 根竖条，pivot 在底边中点，按 Y 轴缩放从底部"长出" ——
             dominoesContainer = CreateRect(mainContainer, "DominoesContainer");
             SetStretch(dominoesContainer);
             int dCount = 10;
@@ -605,9 +664,10 @@ namespace EasyPeasyTransition
                 dominoBars[i].anchorMax = new Vector2((i + 1) * dStep, 1);
                 dominoBars[i].offsetMin = Vector2.zero;
                 dominoBars[i].offsetMax = Vector2.zero;
-                dominoBars[i].pivot = new Vector2(0.5f, 0);
+                dominoBars[i].pivot = new Vector2(0.5f, 0); // 底边中点：向上生长
             }
 
+            // —— 折叠竖条：FoldingColumns。4 根竖条，pivot 在左侧中点，按 X 轴缩放像屏风展开 ——
             foldingContainer = CreateRect(mainContainer, "FoldingContainer");
             SetStretch(foldingContainer);
             int fCount = 4;
@@ -625,12 +685,13 @@ namespace EasyPeasyTransition
                 foldingColumns[i].anchorMax = new Vector2((i + 1) * fStep, 1);
                 foldingColumns[i].offsetMin = Vector2.zero;
                 foldingColumns[i].offsetMax = Vector2.zero;
-                foldingColumns[i].pivot = new Vector2(0, 0.5f);
+                foldingColumns[i].pivot = new Vector2(0, 0.5f); // 左边中点：向右展开
             }
 
             DisableAllContainers();
         }
 
+        // ===== 构造辅助：CreateRect 统一建 GameObject+RectTransform 并挂父节点；SetStretch 把锚点拉满整屏 =====
         private RectTransform CreateRect(Transform parent, string objName)
         {
             GameObject go = new GameObject(objName);
@@ -641,12 +702,14 @@ namespace EasyPeasyTransition
 
         private void SetStretch(RectTransform rt)
         {
+            // anchorMin=零 / anchorMax=一 / offset 归零 = 四角拉满父节点（标准"铺满"写法）
             rt.anchorMin = Vector2.zero;
             rt.anchorMax = Vector2.one;
             rt.offsetMin = Vector2.zero;
             rt.offsetMax = Vector2.zero;
         }
 
+        // 统一隐藏所有效果容器：过渡开始前清场 + 结束后收尾，保证任意时刻只有一个效果可见
         private void DisableAllContainers()
         {
             fullScreenPanel.gameObject.SetActive(false);
@@ -674,14 +737,21 @@ namespace EasyPeasyTransition
             foldingContainer.gameObject.SetActive(false);
         }
 
+        // ===== 公共入口：三组 API。都先做并发检查，再把参数收拢后交给同一协程 TransitionSequence =====
+        // 回调时机：onTransitionHalfway 在"覆盖完成、揭开之前"触发——这正是切换场景/数据的最佳时机；
+        //           onTransitionCompleted 在整段过渡彻底结束后触发。两者均可为 null。
+        // duration/color 为 null 时回退到序列化字段 transitionDuration / transitionColor。
+
+        // 仅播放过渡（不切场景）。
         public void PlayTransition(TransitionType type, float? enterDuration = null, float? exitDuration = null, Color? customColor = null, UnityAction onTransitionHalfway = null, UnityAction onTransitionCompleted = null)
         {
-            if (isTransitioning) return;
+            if (isTransitioning) return; // 并发保护：已有过渡进行中则直接忽略
             float inDur = enterDuration ?? transitionDuration;
-            float outDur = exitDuration ?? inDur;
+            float outDur = exitDuration ?? inDur; // 出场时长未指定时，回退成与入场相同
             StartCoroutine(TransitionSequence(null, type, inDur, outDur, customColor ?? transitionColor, false, onTransitionHalfway, onTransitionCompleted));
         }
 
+        // 过渡切场景（按名字）。中点处异步加载目标场景，在画面被完全盖住期间完成切换。
         public void LoadScene(string sceneName, TransitionType type, float? enterDuration = null, float? exitDuration = null, Color? customColor = null, UnityAction onTransitionHalfway = null, UnityAction onTransitionCompleted = null)
         {
             if (isTransitioning) return;
@@ -690,6 +760,7 @@ namespace EasyPeasyTransition
             StartCoroutine(TransitionSequence(sceneName, type, inDur, outDur, customColor ?? transitionColor, false, onTransitionHalfway, onTransitionCompleted));
         }
 
+        // 过渡切场景（按 build index）。isIndex=true 标记走 int 重载的 SceneManager.LoadSceneAsync。
         public void LoadScene(int sceneIndex, TransitionType type, float? enterDuration = null, float? exitDuration = null, Color? customColor = null, UnityAction onTransitionHalfway = null, UnityAction onTransitionCompleted = null)
         {
             if (isTransitioning) return;
@@ -698,12 +769,16 @@ namespace EasyPeasyTransition
             StartCoroutine(TransitionSequence(sceneIndex.ToString(), type, inDur, outDur, customColor ?? transitionColor, true, onTransitionHalfway, onTransitionCompleted));
         }
 
+        // ===== 协程状态机：唯一的过渡驱动器。三段式 = 覆盖(cover) → 中点(回调/场景加载) → 揭开(uncover) =====
+        // isEntering=true 对应"覆盖"阶段（传给 ApplyAnimation 的 t 由 0→1）；
+        // isEntering=false 对应"揭开"阶段（t 先翻转成 1-t 再传入，于是视觉上是 1→0 收回）。
         private IEnumerator TransitionSequence(string sceneId, TransitionType type, float inDuration, float outDuration, Color color, bool isIndex, UnityAction onHalfway, UnityAction onCompleted)
         {
             isTransitioning = true;
-            DisableAllContainers();
-            UpdateColors(color);
+            DisableAllContainers(); // 清场：先关掉所有容器，再只开需要的那一个
+            UpdateColors(color);    // 把本次颜色一次性刷到所有缓存 Image 上
 
+            // 这两个"随机延迟"类型每次播放都要重新随机，保证每次质感不同
             if (type == TransitionType.RandomHorizontalStrips)
             {
                 for (int i = 0; i < randomStripDelays.Length; i++)
@@ -719,26 +794,31 @@ namespace EasyPeasyTransition
                 }
             }
 
-            EnableContainerForType(type);
-            fullScreenImage.raycastTarget = true;
+            EnableContainerForType(type);           // 只激活目标类型对应的容器
+            fullScreenImage.raycastTarget = true;   // 打开射线拦截：过渡期间吃掉所有点击，防止误触下层 UI
 
+            // —— 阶段一：覆盖（cover）。t 从 0 缓动到 1，套 EaseOut 让收尾干脆 ——
             float elapsed = 0f;
             while (elapsed < inDuration)
             {
                 elapsed += Time.deltaTime;
-                float t = inDuration > 0f ? Mathf.Clamp01(elapsed / inDuration) : 1f;
+                float t = inDuration > 0f ? Mathf.Clamp01(elapsed / inDuration) : 1f; // 时长为 0 时直接置 1，跳过过渡
                 ApplyAnimation(type, EaseOut(t), true);
-                yield return null;
+                yield return null; // 每帧推进一次
             }
-            ApplyAnimation(type, 1f, true);
+            ApplyAnimation(type, 1f, true); // 收尾对齐到 t=1，避免最后一帧的浮点误差导致没盖满
 
+            // 覆盖完成 = 过渡中点。此时屏幕已被完全盖住，是触发回调/切场景的安全时机。
             onHalfway?.Invoke();
 
+            // —— 阶段二：中点处理（onHalfway 已触发；若指定了场景，则在此异步加载）——
+            // allowSceneActivation=false 先让加载跑到 0.9(就绪) 再放开激活，
+            // 确保真正的场景切换发生在画面已被完全遮住的时刻。
             if (!string.IsNullOrEmpty(sceneId))
             {
                 AsyncOperation op = isIndex ? SceneManager.LoadSceneAsync(int.Parse(sceneId)) : SceneManager.LoadSceneAsync(sceneId);
                 op.allowSceneActivation = false;
-                while (op.progress < 0.9f)
+                while (op.progress < 0.9f) // 进度到 0.9 即表示加载完成、只差激活
                 {
                     yield return null;
                 }
@@ -747,19 +827,21 @@ namespace EasyPeasyTransition
             }
             else
             {
-                yield return null;
+                yield return null; // 没有场景要切时，也等一帧再开始揭开，给中点回调留出执行窗口
             }
 
+            // —— 阶段三：揭开（uncover）。把 1-t 翻转后再 EaseIn，让揭开呈"先快后慢/减速停止"的节奏 ——
             elapsed = 0f;
             while (elapsed < outDuration)
             {
                 elapsed += Time.deltaTime;
                 float t = outDuration > 0f ? Mathf.Clamp01(elapsed / outDuration) : 1f;
-                ApplyAnimation(type, EaseIn(1f - t), false);
+                ApplyAnimation(type, EaseIn(1f - t), false); // 注意这里传入的是 1-t
                 yield return null;
             }
-            ApplyAnimation(type, 0f, false);
+            ApplyAnimation(type, 0f, false); // 收尾对齐到 t=0，确保完全收回
 
+            // —— 收尾：解除输入阻断 + 隐藏所有容器 + 释放并发锁 + 触发完成回调 ——
             fullScreenImage.raycastTarget = false;
             DisableAllContainers();
             isTransitioning = false;
@@ -767,6 +849,8 @@ namespace EasyPeasyTransition
             onCompleted?.Invoke();
         }
 
+        // ===== 颜色与容器选择 =====
+        // UpdateColors：把本次过渡色一次性刷到所有缓存的 Image 上——运行期改色无需重建几何。
         private void UpdateColors(Color c)
         {
             fullScreenImage.color = c;
@@ -796,6 +880,8 @@ namespace EasyPeasyTransition
             for (int i = 0; i < foldingColumns.Length; i++) foldingColumns[i].GetComponent<Image>().color = c;
         }
 
+        // EnableContainerForType：根据 TransitionType 激活对应的那个容器。
+        // 多种类型可共用同一容器（如 Fade/Slide*/Zoom 共用 fullScreenPanel，Checkerboard/SpiralGrid 共用 grid）。
         private void EnableContainerForType(TransitionType type)
         {
             switch (type)
@@ -879,14 +965,19 @@ namespace EasyPeasyTransition
             }
         }
 
+        // ===== 动画派发器：把归一化进度 t∈[0,1] 翻译成具体 Transform 变化。每种 TransitionType 一个 case =====
+        // sw/sh 取屏幕尺寸的 1.5 倍作为"屏外起点"，保证面板从画面外滑入时不被看见。
+        // 错峰套路（贯穿多个 case）：delay = i * k;  localT = Clamp01((t - delay) / span);
+        //   含义是第 i 个元素比第 0 个晚 delay 秒启动，再用 span 走完自己的动画——形成"波浪式"涌现。
         private void ApplyAnimation(TransitionType type, float t, bool isEntering)
         {
-            float sw = Screen.width * 1.5f;
-            float sh = Screen.height * 1.5f;
+            float sw = Screen.width * 1.5f;  // 屏宽 × 1.5：用作水平方向的屏外偏移量
+            float sh = Screen.height * 1.5f; // 屏高 × 1.5：用作垂直方向的屏外偏移量
 
             switch (type)
             {
                 case TransitionType.Fade:
+                    // 纯透明度过渡：alpha 直接随 t 从 0→1，位置/缩放保持默认
                     Color c = fullScreenImage.color;
                     c.a = t;
                     fullScreenImage.color = c;
@@ -895,6 +986,7 @@ namespace EasyPeasyTransition
                     break;
 
                 case TransitionType.SlideLeft:
+                    // 从屏幕右侧(sw)滑到中心(0)：Lerp(sw, 0, t)
                     fullScreenPanel.anchoredPosition = new Vector2(Mathf.Lerp(sw, 0, t), 0);
                     fullScreenPanel.localScale = Vector3.one;
                     break;
@@ -920,10 +1012,12 @@ namespace EasyPeasyTransition
                     break;
 
                 case TransitionType.VerticalSlices:
+                    // 经典错峰：第 i 条延迟 i*0.1s，归一窗口 0.6；yPos 在"覆盖"时从屏外上方滑入中心
                     for (int i = 0; i < slices.Length; i++)
                     {
                         float delay = i * 0.1f;
                         float localT = Mathf.Clamp01((t - delay) / 0.6f);
+                        // isEntering 决定方向：覆盖时从 +2倍屏高 滑到 0；揭开时从 0 滑到 -2倍屏高
                         float yPos = isEntering ? Mathf.Lerp(sh * 2f, 0f, localT) : Mathf.Lerp(0f, -sh * 2f, 1f - localT);
                         slices[i].anchoredPosition = new Vector2(0, yPos);
                     }
@@ -1036,7 +1130,7 @@ namespace EasyPeasyTransition
                     break;
 
                 case TransitionType.ClockWipe:
-                    clockImage.fillAmount = t;
+                    clockImage.fillAmount = t; // 扇形填充量随 t 从 0 扫到 1（依赖 InitializeUI 里设的 Radial360/Top 起点）
                     break;
 
                 case TransitionType.MultiLayerSlide:
@@ -1069,6 +1163,7 @@ namespace EasyPeasyTransition
                     break;
 
                 case TransitionType.BouncingBars:
+                    // 入场用 Overshoot 出回弹感；出场退化为 localT^2（二次缓动），避免收回时还在弹
                     for (int i = 0; i < bounceBars.Length; i++)
                     {
                         float delay = i * 0.05f;
@@ -1142,16 +1237,23 @@ namespace EasyPeasyTransition
             }
         }
 
+        // ===== 缓动函数（纯数学、无副作用）。统一把线性 t 映射成更有"手感"的非线性进度 =====
+
+        // EaseOut：1-(1-t)^3，开头快、收尾慢——用于"覆盖"阶段，让面板干脆盖下。
         private float EaseOut(float t)
         {
             return 1f - (1f - t) * (1f - t) * (1f - t);
         }
 
+        // EaseIn：t^3。就 EaseIn 本身（自变量 0→1）而言是"开头慢、收尾快"。
+        // 但揭开阶段传的是 EaseIn(1-t)：自变量 1-t 由 1 递减到 0，值便从 1 快速衰减、末段缓停，
+        // 所以视觉呈"先快后慢/减速停止"的收回节奏（与覆盖用的 EaseOut 对称，都是干脆启动、缓停收尾）。
         private float EaseIn(float t)
         {
             return t * t * t;
         }
 
+        // Overshoot：带 1.70158 回弹系数的三次缓动，会略微冲过 1 再回落——用于弹跳/多米诺的回弹质感。
         private float Overshoot(float t)
         {
             if (t == 0f) return 0f;

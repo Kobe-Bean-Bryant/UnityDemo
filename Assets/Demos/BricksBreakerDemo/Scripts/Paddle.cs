@@ -108,6 +108,7 @@ namespace BricksBreakerDemo
         private async UniTask PlayFallAsync(CancellationToken ct)
         {
             if (_visual == null) return;
+            if (!JuicySettings.PaddleTweenIn) return; // 关：跳过入场，挡板留在原位（球仍正常生成）
             _isAnimating = true; // 下落期间禁用拉伸
             try
             {
@@ -168,7 +169,7 @@ namespace BricksBreakerDemo
             float clampedX = ClampX(_targetX);
 
             // 拉伸挤压：只缩放视觉子物体 _visual；下落期间禁用避免和入场动画冲突
-            if (_visual != null && !_isAnimating)
+            if (_visual != null && !_isAnimating && JuicySettings.PaddleSquash)
             {
                 float delta = Mathf.Abs(clampedX - _rb.position.x);
                 float scaleX = Mathf.Clamp(1f + delta / stretchDivisor, 1f, maxStretch);
@@ -198,21 +199,24 @@ namespace BricksBreakerDemo
             collision.rigidbody.linearVelocity = ComputeDirection(collision.transform.position) * ball.Speed;
 
             // juicy G09: PARTICLE_PADDLE_COLLISION — 彩纸烟花（随机亮色，向上爆发+旋转+飘荡下落）
-            Vector2 ballPos = collision.transform.position;
-            Color[] confettiColors = {
-                new Color(0.969f, 0.827f, 0.478f), // 金
-                new Color(0.922f, 0.631f, 0.498f), // 橙
-                new Color(0.384f, 0.741f, 0.518f), // 绿
-                new Color(0.812f, 0.247f, 0.275f), // 红
-                new Color(0.482f, 0.620f, 0.878f), // 蓝
-                new Color(0.823f, 0.549f, 0.855f), // 紫
-            };
-            Brick.SpawnConfetti(ballPos, 20, confettiColors,
-                6f, 12f,      // 向上初速度范围
-                3f,           // 水平散开
-                15f,          // 重力
-                1f, 2f,       // 寿命
-                0.3f, 0.5f);  // 尺寸
+            if (JuicySettings.PaddleConfetti)
+            {
+                Vector2 ballPos = collision.transform.position;
+                Color[] confettiColors = {
+                    new Color(0.969f, 0.827f, 0.478f), // 金
+                    new Color(0.922f, 0.631f, 0.498f), // 橙
+                    new Color(0.384f, 0.741f, 0.518f), // 绿
+                    new Color(0.812f, 0.247f, 0.275f), // 红
+                    new Color(0.482f, 0.620f, 0.878f), // 蓝
+                    new Color(0.823f, 0.549f, 0.855f), // 紫
+                };
+                Brick.SpawnConfetti(ballPos, 20, confettiColors,
+                    6f, 12f,      // 向上初速度范围
+                    3f,           // 水平散开
+                    15f,          // 重力
+                    1f, 2f,       // 寿命
+                    0.3f, 0.5f);  // 尺寸
+            }
         }
 
         // 双面反弹：水平偏移→角度；垂直方向由球在挡板上/下方决定

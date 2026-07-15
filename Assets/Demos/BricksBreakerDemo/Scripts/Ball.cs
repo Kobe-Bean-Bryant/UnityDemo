@@ -108,29 +108,44 @@ namespace BricksBreakerDemo
                 float td = Time.fixedDeltaTime * 60f;
 
                 // 放大脉冲：指数衰减（juicy: 0.35）
-                if (_pop > 0.01f)
+                if (JuicySettings.BallPop)
                 {
-                    _pop -= td * _pop * popDecay;
-                    if (_pop < 0.01f) _pop = 0f;
+                    if (_pop > 0.01f)
+                    {
+                        _pop -= td * _pop * popDecay;
+                        if (_pop < 0.01f) _pop = 0f;
+                    }
                 }
+                else _pop = 0f;
 
                 // 果冻晃动：阻尼弹簧积分（juicy: 0.25 刚度, 0.10 阻尼）
-                if (Mathf.Abs(_wobble) > 0.0001f)
+                if (JuicySettings.BallWobble)
                 {
-                    _wobbleVel += td * -wobbleStiffness * _wobble; // 回复力
-                    _wobbleVel -= td * _wobbleVel * wobbleDamping; // 阻尼
-                    _wobble += td * _wobbleVel; // 积分
+                    if (Mathf.Abs(_wobble) > 0.0001f)
+                    {
+                        _wobbleVel += td * -wobbleStiffness * _wobble; // 回复力
+                        _wobbleVel -= td * _wobbleVel * wobbleDamping; // 阻尼
+                        _wobble += td * _wobbleVel; // 积分
+                    }
                 }
+                else { _wobble = 0f; _wobbleVel = 0f; }
 
                 // 旋转缓动（juicy 第 72-73 行：朝目标角度平滑过渡，不瞬切；LerpAngle 处理 -180/180 环绕）
-                float targetAngle = Mathf.Atan2(_rb.linearVelocity.y, _rb.linearVelocity.x) * Mathf.Rad2Deg - 90f;
-                _visualAngle = Mathf.LerpAngle(_visualAngle, targetAngle, td * 0.5f);
-                _visual.localRotation = Quaternion.Euler(0f, 0f, _visualAngle);
+                if (JuicySettings.BallRotation)
+                {
+                    float targetAngle = Mathf.Atan2(_rb.linearVelocity.y, _rb.linearVelocity.x) * Mathf.Rad2Deg - 90f;
+                    _visualAngle = Mathf.LerpAngle(_visualAngle, targetAngle, td * 0.5f);
+                    _visual.localRotation = Quaternion.Euler(0f, 0f, _visualAngle);
+                }
 
                 // 速度拉伸
-                float speedRatio =
-                    Mathf.Clamp01((_currentSpeed - baseSpeed) / Mathf.Max(maxSpeed - baseSpeed, 0.0001f));
-                float stretch = 1f + speedRatio * maxStretch;
+                float stretch = 1f;
+                if (JuicySettings.BallStretch)
+                {
+                    float speedRatio =
+                        Mathf.Clamp01((_currentSpeed - baseSpeed) / Mathf.Max(maxSpeed - baseSpeed, 0.0001f));
+                    stretch = 1f + speedRatio * maxStretch;
+                }
 
                 // 拉伸+晃动限幅（juicy 第 110-111 行），再叠加 pop（juicy: extra_scale 在 clamp 之后）
                 // 符号：Y 是运动方向，碰撞时(wobble>0)Y 收缩=挤压、X 涨=拉伸，匹配 squash&stretch 与 juicy 相对行为
@@ -150,16 +165,22 @@ namespace BricksBreakerDemo
             _currentSpeed = Mathf.Min(_currentSpeed + speedIncreasePerHit * (1f - speedProgress), maxSpeed);
 
             // 果冻效果：放大脉冲（累加）+ 晃动（位移+速度踢）
-            _pop += popAmount;
-            _wobble = wobbleKick;
-            _wobbleVel = wobbleKickVelocity; // 速度踢（juicy: 2.5）
+            if (JuicySettings.BallPop) _pop += popAmount;
+            if (JuicySettings.BallWobble)
+            {
+                _wobble = wobbleKick;
+                _wobbleVel = wobbleKickVelocity; // 速度踢（juicy: 2.5）
+            }
 
             // juicy G0: PARTICLE_BALL_COLLISION — 5 个橙色冲击粒子从球位置炸开
-            float baseAngleDeg = -Mathf.Atan2(_rb.linearVelocity.x, _rb.linearVelocity.y) * Mathf.Rad2Deg;
-            Brick.SpawnBurst(transform.position, 5, 90f, baseAngleDeg,
-                _currentSpeed * 0.25f, 0.5f,
-                new Color(0.922f, 0.631f, 0.498f), // juicy COLOR_SPARK 0xeba17f
-                0.3f, 0.6f, 1.5f);
+            if (JuicySettings.BallCollisionParticles)
+            {
+                float baseAngleDeg = -Mathf.Atan2(_rb.linearVelocity.x, _rb.linearVelocity.y) * Mathf.Rad2Deg;
+                Brick.SpawnBurst(transform.position, 5, 90f, baseAngleDeg,
+                    _currentSpeed * 0.25f, 0.5f,
+                    new Color(0.922f, 0.631f, 0.498f), // juicy COLOR_SPARK 0xeba17f
+                    0.3f, 0.6f, 1.5f);
+            }
         }
     }
 }

@@ -63,7 +63,7 @@ namespace BricksBreakerDemo
         }
 
         // 重置游戏状态：清残留碎片 + 重激活砖块并下落 + 销毁所有球 + 挡板下落后生成新球
-        private void ResetGame()
+        public void ResetGame()
         {
             Brick.ClearFragments();
 

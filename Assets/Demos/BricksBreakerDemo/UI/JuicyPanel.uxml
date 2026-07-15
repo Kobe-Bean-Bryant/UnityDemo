@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" editor-extension-mode="False">
+    <ui:Style src="project://database/Assets/Demos/BricksBreakerDemo/UI/JuicyPanel.uss" />
+
+    <!-- picking-mode="Ignore" 让面板区域外的点击穿透到游戏 -->
+    <ui:VisualElement class="root-overlay" picking-mode="Ignore">
+
+        <!-- C# 通过 root.Q("Panel") 找它并切换 display。所有绑定控件必须是 Panel 的后代 -->
+        <ui:VisualElement name="Panel" class="juicy-panel">
+
+            <ui:Label text="Juice Toggles" class="panel-title" />
+            <ui:Label text="Tab 收起 · Enter 全开 · 2 全关 · Respawn 重生成" class="panel-hint" />
+
+            <!-- 中部 ScrollView: flex-grow + min-height:0, 配合面板确定 height 正确滚动 -->
+            <ui:ScrollView class="scroll" mode="Vertical">
+
+                <!-- ===== Ball ===== -->
+                <ui:VisualElement class="section">
+                    <ui:Label text="Ball (5)" class="section-title" />
+                    <ui:Toggle name="BallPop" label="碰撞放大脉冲" class="toggler" />
+                    <ui:Toggle name="BallWobble" label="阻尼弹簧晃动" class="toggler" />
+                    <ui:Toggle name="BallRotation" label="旋转朝向" class="toggler" />
+                    <ui:Toggle name="BallStretch" label="速度拉伸" class="toggler" />
+                    <ui:Toggle name="BallCollisionParticles" label="碰撞冲击粒子" class="toggler" />
+                </ui:VisualElement>
+
+                <!-- ===== Paddle ===== -->
+                <ui:VisualElement class="section">
+                    <ui:Label text="Paddle (3)" class="section-title" />
+                    <ui:Toggle name="PaddleSquash" label="鼠标拉伸挤压" class="toggler" />
+                    <ui:Toggle name="PaddleTweenIn" label="下落入场动画" class="toggler" />
+                    <ui:Toggle name="PaddleConfetti" label="碰撞彩纸烟花" class="toggler" />
+                </ui:VisualElement>
+
+                <!-- ===== Brick ===== -->
+                <ui:VisualElement class="section">
+                    <ui:Label text="Brick (8)" class="section-title" />
+                    <ui:Toggle name="BrickTweenIn" label="下落入场动画" class="toggler" />
+                    <ui:Toggle name="BlockShatter" label="切片碎裂" class="toggler" />
+                    <ui:Toggle name="BlockBurstParticles" label="碎裂冲击粒子" class="toggler" />
+                    <ui:Toggle name="BlockPush" label="推开" class="toggler" />
+                    <ui:Toggle name="BlockGravity" label="重力下落" class="toggler" />
+                    <ui:Toggle name="BlockRotate" label="旋转" class="toggler" />
+                    <ui:Toggle name="BlockScale" label="缩放衰减" class="toggler" />
+                    <ui:Toggle name="BlockDarken" label="变暗" class="toggler" />
+                </ui:VisualElement>
+
+                <!-- ===== Duration ===== -->
+                <ui:VisualElement class="section">
+                    <ui:Label text="Duration" class="section-title" />
+                    <ui:Slider name="DestructionDuration" label="销毁时长" class="duration-slider" low-value="0.3" high-value="5" value="2" />
+                </ui:VisualElement>
+
+            </ui:ScrollView>
+
+            <!-- 底部按钮栏: flex-shrink:0 钉底, 始终可达 -->
+            <ui:VisualElement class="btn-row">
+                <ui:Button name="AllOn" text="All On" class="btn btn-allon" />
+                <ui:Button name="AllOff" text="All Off" class="btn btn-alloff" />
+                <ui:Button name="Respawn" text="Respawn" class="btn btn-respawn" />
+            </ui:VisualElement>
+
+        </ui:VisualElement>
+    </ui:VisualElement>
+</ui:UXML>

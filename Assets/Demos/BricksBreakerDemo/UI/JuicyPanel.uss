@@ -1,0 +1,272 @@
+/* =====================================================================
+   JuicyPanel v5 — 真·MinimalComps 调试控制台
+   本轮修订:
+   - 字号统一再放大 (用户连续两轮要求"再大一点", 这次到位)
+   - checkbox 对勾改用 文字✓ Label (Unity 内置 sprite tint 在本版本不可靠)
+     → 在 <ui:Toggle> 内嵌 <ui:Label text="✓">, USS :checked 控制显隐
+     → Toggle 的 name/value 不变, 反射绑定完全不受影响
+   不变: 去现代化扁平风, ScrollView 结构, %面板+px字体, 深色调, 绑定契约
+   ===================================================================== */
+
+:root {
+    font-family: "Consolas", "SF Mono", "Menlo", "Roboto Mono", "Microsoft YaHei UI", "PingFang SC", monospace;
+}
+
+.root-overlay {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+}
+
+/* ---------------------------------------------------------------------
+   面板主体 (响应式策略不变: 32%/280/380 宽, 82% 高)
+   padding 14→16 配合大字
+   --------------------------------------------------------------------- */
+.juicy-panel {
+    position: absolute;
+    top: 14px;
+    right: 14px;
+
+    width: 32%;
+    min-width: 280px;
+    max-width: 380px;
+    height: 82%;
+
+    flex-direction: column;
+    flex-shrink: 0;
+
+    background-color: rgba(26, 27, 30, 0.95);
+    border-width: 1px;
+    border-color: rgba(255, 255, 255, 0.14);
+    border-radius: 0;
+    padding: 16px 16px 14px;
+
+    color: rgb(210, 210, 210);
+    font-size: 16px;   /* 基础字号 14→16, 未显式设字的子元素继承此值 */
+}
+
+/* 标题: 18→22 */
+.panel-title {
+    font-size: 22px;
+    -unity-font-style: bold;
+    color: rgb(255, 255, 255);
+    letter-spacing: 0;
+    margin-bottom: 4px;
+    flex-shrink: 0;
+}
+
+/* hint: 11→12 */
+.panel-hint {
+    font-size: 12px;
+    color: rgb(140, 140, 140);
+    white-space: normal;
+    margin-bottom: 12px;
+    padding-bottom: 10px;
+    flex-shrink: 0;
+    border-bottom-width: 1px;
+    border-bottom-color: rgba(255, 255, 255, 0.10);
+}
+
+/* ---------------------------------------------------------------------
+   ScrollView
+   --------------------------------------------------------------------- */
+.scroll {
+    flex-grow: 1;
+    flex-shrink: 1;
+    min-height: 0;
+    margin-bottom: 10px;
+}
+
+.juicy-panel .unity-scroller--vertical,
+.juicy-panel .unity-base-slider__vertical-scroller {
+    background-color: rgba(0, 0, 0, 0.35);
+    width: 9px;
+    margin-left: 2px;
+}
+
+.juicy-panel .unity-scroller__low-button,
+.juicy-panel .unity-scroller__high-button {
+    display: none;
+}
+
+/* ---------------------------------------------------------------------
+   Section: 朴素标题 + 细分隔线
+   --------------------------------------------------------------------- */
+.section {
+    margin-bottom: 2px;
+}
+
+/* section 标题: 14→17 */
+.section-title {
+    font-size: 17px;
+    -unity-font-style: bold;
+    color: rgb(255, 255, 255);
+    letter-spacing: 0.3px;
+    margin-top: 14px;
+    margin-bottom: 8px;
+    padding-bottom: 5px;
+    border-bottom-width: 1px;
+    border-bottom-color: rgba(255, 255, 255, 0.15);
+}
+
+/* ---------------------------------------------------------------------
+   Toggle 行: 标签 14→17, 行距放宽
+   关键: position:relative 作为内嵌 ✓ Label 的定位锚点;
+         align-items:center 让 input box 与文字基线对齐
+   --------------------------------------------------------------------- */
+.juicy-panel Toggle,
+.juicy-panel .toggler {
+    position: relative;
+    align-items: center;
+
+    color: rgb(225, 225, 225);
+    font-size: 17px;
+    margin-top: 7px;
+    margin-bottom: 7px;
+    padding-left: 0;
+    padding-right: 2px;
+}
+
+.juicy-panel .toggler .unity-label {
+    color: rgb(225, 225, 225);
+    font-size: 17px;
+}
+
+/* =====================================================================
+   ★ checkbox 视觉 ★
+   用 Unity 内置 .unity-toggle__checkmark（本就在 input 框内，位置/层级天然正确），
+   -unity-background-image-tint 染暖黄。比绝对定位 Label 稳健（不依赖运行时位置）。
+   - .unity-toggle__input: 20 方形大框, 直角, 深底硬边
+   - .unity-toggle__checkmark: 不隐藏, tint 暖黄 + 略缩小居中
+   - :checked input: 边框转黄 (次级信号)
+   ===================================================================== */
+.juicy-panel .unity-toggle__input {
+    width: 20px;
+    height: 20px;
+    flex-basis: 20px;
+    flex-grow: 0;
+    flex-shrink: 0;
+    margin-right: 11px;
+
+    background-color: rgba(0, 0, 0, 0.55);
+    border-width: 1px;
+    border-color: rgba(255, 255, 255, 0.45);
+    border-radius: 1px;
+}
+
+/* 内置 checkmark: 不隐藏, 染暖黄 + 居中略缩（它在 input 框内部, 位置正确） */
+.juicy-panel .unity-toggle__checkmark {
+    -unity-background-image-tint: rgb(255, 220, 120);
+    width: 16px;
+    height: 16px;
+    margin-top: 2px;
+    margin-left: 2px;
+    align-self: center;
+    justify-content: center;
+}
+
+/* hover: 边框白亮 */
+.juicy-panel .unity-toggle__input:hover {
+    border-color: rgba(255, 255, 255, 0.75);
+}
+
+/* :checked: 边框转黄 + 微暖底 (✓ 的次级强调信号) */
+.juicy-panel Toggle:checked .unity-toggle__input,
+.juicy-panel .unity-toggle:checked .unity-toggle__input,
+.juicy-panel .toggler:checked .unity-toggle__input {
+    border-color: rgb(255, 220, 120);
+    background-color: rgba(255, 220, 120, 0.10);
+}
+
+/* ---------------------------------------------------------------------
+   Slider (销毁时长) — 字号同步放大
+   --------------------------------------------------------------------- */
+.juicy-panel Slider,
+.juicy-panel .duration-slider {
+    color: rgb(225, 225, 225);
+    font-size: 17px;
+    margin-top: 8px;
+    margin-bottom: 6px;
+}
+
+.juicy-panel .duration-slider .unity-label {
+    color: rgb(225, 225, 225);
+    font-size: 17px;
+}
+
+.juicy-panel .unity-slider__track,
+.juicy-panel .unity-base-slider__track {
+    background-color: rgba(0, 0, 0, 0.5);
+    border-radius: 0;
+    border-width: 1px;
+    border-color: rgba(255, 255, 255, 0.15);
+    height: 6px;
+}
+
+.juicy-panel .unity-slider__thumb,
+.juicy-panel .unity-base-slider__thumb,
+.juicy-panel .unity-base-slider__dragger {
+    background-color: rgb(225, 225, 225);
+    border-radius: 1px;
+    border-width: 1px;
+    border-color: rgba(0, 0, 0, 0.6);
+    width: 14px;
+    height: 18px;
+}
+
+.juicy-panel .duration-slider .unity-integer-field,
+.juicy-panel .duration-slider .unity-float-field,
+.juicy-panel .duration-slider .unity-base-text-field {
+    display: none;
+}
+
+/* ---------------------------------------------------------------------
+   底部按钮栏 — 字号/高度同步放大
+   --------------------------------------------------------------------- */
+.btn-row {
+    flex-direction: row;
+    flex-shrink: 0;
+    margin-top: 2px;
+    padding-top: 10px;
+    border-top-width: 1px;
+    border-top-color: rgba(255, 255, 255, 0.10);
+}
+
+.btn {
+    flex-grow: 1;
+    flex-basis: 0;
+    margin-left: 2px;
+    margin-right: 2px;
+    padding-top: 11px;       /* 8→11, 更易点 */
+    padding-bottom: 11px;
+
+    background-color: rgba(255, 255, 255, 0.04);
+    border-width: 1px;
+    border-color: rgba(255, 255, 255, 0.14);
+    border-radius: 0;
+
+    color: rgb(225, 225, 225);
+    font-size: 16px;         /* 13→16 */
+    -unity-font-style: bold;
+}
+
+.btn:hover {
+    background-color: rgba(255, 255, 255, 0.12);
+    border-color: rgba(255, 255, 255, 0.32);
+}
+
+.btn:active {
+    background-color: rgba(0, 0, 0, 0.45);
+}
+
+.btn-allon,
+.btn-alloff {
+    color: rgb(225, 225, 225);
+}
+
+.btn-respawn {
+    color: rgb(255, 220, 120);
+    border-color: rgba(255, 220, 120, 0.40);
+}

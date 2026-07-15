@@ -86,6 +86,7 @@ namespace BricksBreakerDemo
         private async UniTaskVoid PlayFallAsync(CancellationToken ct)
         {
             if (_visual == null) return;
+            if (!JuicySettings.BrickTweenIn) return;
 
             Vector3 restPos = Vector3.zero;
             Vector3 startPos = restPos + Vector3.up * fallHeight;
@@ -123,10 +124,17 @@ namespace BricksBreakerDemo
             var vsr = _visual != null ? _visual.GetComponent<SpriteRenderer>() : null;
             Color brickColor = vsr != null ? vsr.color : Color.white;
 
-            if (vsr != null && vsr.sprite != null && _visual != null && fragmentMaterial != null)
+            // juicy 独立作用模型（Block.as:63-117）：任一销毁效果开 → 生成碎片对象（1整块或2切片），
+            // Push/Gravity/Rotate/Scale/Darken 各自独立作用，互不依赖 BlockShatter。
+            bool anyDestructionEffect =
+                JuicySettings.BlockPush || JuicySettings.BlockGravity ||
+                JuicySettings.BlockRotate || JuicySettings.BlockScale ||
+                JuicySettings.BlockShatter || JuicySettings.BlockDarken;
+
+            if (anyDestructionEffect && vsr != null && vsr.sprite != null && _visual != null && fragmentMaterial != null)
             {
                 Sprite sprite = vsr.sprite;
-                Color fragColor = brickColor * fragmentTint;
+                Color fragColor = JuicySettings.BlockDarken ? (brickColor * fragmentTint) : brickColor;
 
                 // 用外接矩形的 4 角（匹配 juicy SliceEffect 构造函数）
                 GetRectFromSprite(sprite, out var rectVerts, out var rectUvs);
@@ -138,37 +146,34 @@ namespace BricksBreakerDemo
                 ld.Normalize();
                 Vector2 p1 = lp + ld * 50f, p2 = lp - ld * 50f;
 
-                // PUSH：球→砖方向
+                // PUSH：球→砖方向（独立开关；关时无初速，仅靠 Gravity 才动）
                 Vector2 pushDir = ((Vector2)_visual.position - ballWorldPos).normalized;
-                Vector2 pushVel = pushDir * pushSpeed;
+                Vector2 pushVel = JuicySettings.BlockPush ? (pushDir * pushSpeed) : Vector2.zero;
+                // ROTATE：角速度初值（独立开关；关时为 0）
+                float pickAngVel() => JuicySettings.BlockRotate ? (UnityEngine.Random.value > 0.5f ? fragAngular : -fragAngular) : 0f;
 
-                // SHATTER 分离力：切线垂直方向
-                Vector2 perpWorld = _visual.TransformDirection(new Vector2(-ld.y, ld.x)).normalized;
-                Vector2 shatterVel = perpWorld * pushSpeed * 0.4f;
-
-                if (Slice(rectVerts, rectUvs, p1, p2, out var v1, out var u1, out var v2, out var u2))
+                if (JuicySettings.BlockShatter && Slice(rectVerts, rectUvs, p1, p2, out var v1, out var u1, out var v2, out var u2))
                 {
-                    // 切成功：2 块多边形碎片
-                    float a1 = UnityEngine.Random.value > 0.5f ? fragAngular : -fragAngular;
-                    float a2 = UnityEngine.Random.value > 0.5f ? fragAngular : -fragAngular;
-                    SpawnSlice(v1, u1, sprite, fragColor, pushVel + shatterVel, a1);
-                    SpawnSlice(v2, u2, sprite, fragColor, pushVel - shatterVel, a2);
+                    // 切成功：2 块多边形碎片；SHATTER 分离力（切线垂直方向，切片固有）
+                    Vector2 perpWorld = _visual.TransformDirection(new Vector2(-ld.y, ld.x)).normalized;
+                    Vector2 shatterVel = perpWorld * pushSpeed * 0.4f;
+                    SpawnSlice(v1, u1, sprite, fragColor, pushVel + shatterVel, pickAngVel());
+                    SpawnSlice(v2, u2, sprite, fragColor, pushVel - shatterVel, pickAngVel());
                 }
                 else
                 {
-                    // 切失败兜底：整块矩形
-                    float a = UnityEngine.Random.value > 0.5f ? fragAngular : -fragAngular;
+                    // 不切片（BlockShatter 关）或切失败兜底：1 整块矩形碎片（juicy 单切片模型）
                     SpawnSlice(new List<Vector2>(rectVerts), new List<Vector2>(rectUvs),
-                        sprite, fragColor, pushVel, a);
+                        sprite, fragColor, pushVel, pickAngVel());
                 }
             }
-            else if (fragmentMaterial == null)
+            else if (anyDestructionEffect && fragmentMaterial == null)
             {
                 Debug.LogWarning("[Brick] fragmentMaterial 未赋值，无法生成碎片");
             }
 
-            // PARTICLE BLOCK SHATTER：砖色小方块从球位置炸开
-            if (shatterParticleCount > 0)
+            // PARTICLE BLOCK SHATTER：砖色小方块从球位置炸开（独立于切片）
+            if (JuicySettings.BlockBurstParticles && shatterParticleCount > 0)
             {
                 float baseAngleDeg = -Mathf.Atan2(ballWorldVel.x, ballWorldVel.y) * Mathf.Rad2Deg;
                 SpawnBurst(ballWorldPos, shatterParticleCount, 45f, baseAngleDeg,
@@ -217,19 +222,27 @@ namespace BricksBreakerDemo
         {
             Vector2 pos = Vector2.zero;
             float age = 0f;
-            while (age < fragLifetime)
+            float duration = JuicySettings.DestructionDuration;
+            while (age < duration)
             {
                 float dt = Time.deltaTime;
                 age += dt;
-                pos += vel * dt;
-                vel.y -= fragGravity * dt;
+                // GRAVITY（独立；BlockPush 初速在生成时赋，BlockGravity 在此累积）
+                if (JuicySettings.BlockGravity) vel.y -= fragGravity * dt;
+                // DAMPING（随物理，速度衰减；对零速度无害）
                 vel *= Mathf.Max(0f, 1f - fragDamping * dt);
                 angVel *= Mathf.Max(0f, 1f - fragDamping * dt);
+                // 位置积分（有速度即动）
+                pos += vel * dt;
                 go.transform.position = baseWorldPos + new Vector3(pos.x, pos.y, 0f);
-                go.transform.Rotate(0f, 0f, angVel * dt);
-                // SCALE：(1-t)² 缩放到 0（juicy GTween easeOutQuad）
-                float st = Mathf.Clamp01(age / fragLifetime);
-                go.transform.localScale = initialScale * ((1f - st) * (1f - st));
+                // ROTATE（独立）
+                if (JuicySettings.BlockRotate) go.transform.Rotate(0f, 0f, angVel * dt);
+                // SCALE：(1-t)² 缩放到 0（独立）
+                if (JuicySettings.BlockScale)
+                {
+                    float st = Mathf.Clamp01(age / duration);
+                    go.transform.localScale = initialScale * ((1f - st) * (1f - st));
+                }
                 await UniTask.Yield(ct);
             }
 
